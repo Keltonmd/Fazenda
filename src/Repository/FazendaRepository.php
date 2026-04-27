@@ -16,28 +16,72 @@ class FazendaRepository extends ServiceEntityRepository
         parent::__construct($registry, Fazenda::class);
     }
 
-    //    /**
-    //     * @return Fazenda[] Returns an array of Fazenda objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('f.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    public function buscarPorUsuario(int $idUsuario): array {
+        return $this->createQueryBuilder('f')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->setParameter('idUsuario', $idUsuario)
+            ->getQuery()
+            ->getResult();
+    }
 
-    //    public function findOneBySomeField($value): ?Fazenda
-    //    {
-    //        return $this->createQueryBuilder('f')
-    //            ->andWhere('f.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    public function existePorUsuarioENome(int $idUsuario, string $nome): bool
+    {
+        return (bool) $this->createQueryBuilder('f')
+            ->select('1')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->andWhere('LOWER(f.nome) = LOWER(:nome)')
+            ->setParameter('idUsuario', $idUsuario)
+            ->setParameter('nome', $nome)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    public function contarPorUsuario(int $idUsuario): int
+    {
+        return (int) $this->createQueryBuilder('f')
+            ->select('COUNT(f.id)')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->setParameter('idUsuario', $idUsuario)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return Fazenda[] */
+    public function buscarUltimasPorUsuario(int $idUsuario, int $limite = 5): array
+    {
+        return $this->createQueryBuilder('f')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->setParameter('idUsuario', $idUsuario)
+            ->orderBy('f.id', 'DESC')
+            ->setMaxResults($limite)
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Query para KnpPaginatorBundle
+    public function buscarPorUsuarioQuery(int $idUsuario, $search)
+    {
+        $qb = $this->createQueryBuilder('f')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->setParameter('idUsuario', $idUsuario)
+            ->orderBy('f.id', 'DESC');
+
+        if ($search) {
+            $qb->andWhere('
+                (
+                    LOWER(f.nome) LIKE :search
+                    OR LOWER(f.responsavel) LIKE :search
+                )
+            ')
+            ->setParameter('search', '%' . strtolower($search) . '%');
+        }
+
+        return $qb;
+    }
 }
