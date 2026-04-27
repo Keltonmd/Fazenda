@@ -1,13 +1,34 @@
 <?php
 
 namespace App\Dto;
+use Symfony\Component\Validator\Constraints as Assert;
 
 use App\Entity\Fazenda;
 
 class FazendaDTO {
     private ?int $id = null;
+
+    #[Assert\NotBlank(message: 'Nome é obrigatório')]
+    #[Assert\Length(
+        min: 2,
+        max: 150,
+        minMessage: 'Nome muito curto',
+        maxMessage: 'Nome muito longo'
+    )]
     private ?string $nome = null;
+
+    #[Assert\NotBlank(message: 'Responsável é obrigatório')]
+    #[Assert\Length(
+        min: 2,
+        max: 100,
+        minMessage: 'Responsável muito curto',
+        maxMessage: 'Responsável muito longo'
+    )]
     private ?string $responsavel = null;
+
+    #[Assert\NotNull(message: 'Tamanho é obrigatório')]
+    #[Assert\Positive(message: 'Tamanho deve ser maior que zero')]
+    #[Assert\LessThan(200000, message: 'Tamanho muito grande (inválido)')]
     private ?float $tamanhoHA = null;
 
     // Construtor

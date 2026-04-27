@@ -3,16 +3,38 @@
 namespace App\Dto;
 
 use App\Entity\Gado;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class GadoDTO {
     private ?int $id = null;
+
+    #[Assert\NotNull(message: 'Código é obrigatório')]
+    #[Assert\Positive(message: 'Código deve ser positivo')]
     private ?int $codigo = null;
+
+    #[Assert\NotNull(message: 'Leite é obrigatório')]
+    #[Assert\GreaterThanOrEqual(0, message: 'Leite não pode ser negativo')]
     private ?float $leite = null;
+
+    #[Assert\NotNull(message: 'Ração é obrigatória')]
+    #[Assert\GreaterThanOrEqual(0, message: 'Ração não pode ser negativa')]
     private ?float $racao = null;
+
+    #[Assert\NotNull(message: 'Peso é obrigatório')]
+    #[Assert\GreaterThan(0, message: 'Peso deve ser maior que zero')]
+    #[Assert\LessThan(2000, message: 'Peso muito alto (inválido)')]
     private ?float $peso = null;
+
+    #[Assert\NotNull(message: 'Nascimento é obrigatório')]
+    #[Assert\Type(\DateTimeImmutable::class, message: 'Data inválida')]
+    #[Assert\LessThanOrEqual('today', message: 'Data de nascimento não pode ser futura')]
     private ?\DateTimeImmutable $nascimento = null;
+
     private ?bool $abatido = null;
+
     private ?\DateTimeImmutable $dataAbate = null;
+
+    #[Assert\Positive(message: 'Fazenda inválida')]
     private ?int $fazendaId = null;
 
     // Construtor

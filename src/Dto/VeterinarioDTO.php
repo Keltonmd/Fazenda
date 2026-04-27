@@ -3,11 +3,33 @@
 namespace App\Dto;
 
 use App\Entity\Veterinario;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class VeterinarioDTO {
     private ?int $id = null;
+
+    #[Assert\NotBlank(message: 'Nome é obrigatório')]
+    #[Assert\Length(
+        min: 2,
+        max: 100,
+        minMessage: 'Nome muito curto',
+        maxMessage: 'Nome muito longo'
+    )]
     private ?string $nome = null;
+
+    #[Assert\NotBlank(message: 'CRMV é obrigatório')]
+    #[Assert\Length(
+        min: 4,
+        max: 20,
+        minMessage: 'CRMV inválido',
+        maxMessage: 'CRMV muito longo'
+    )]
+    #[Assert\Regex(
+        pattern: "/^[A-Za-z0-9\-\/]+$/",
+        message: "CRMV inválido"
+    )]
     private ?string $crmv = null;
+
     private array $fazendas = [];
 
     // Construtor
