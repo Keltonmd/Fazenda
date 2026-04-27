@@ -36,6 +36,9 @@ class Gado
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Fazenda $fazenda = null;
 
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $dataAbate = null;
+
     // Construtor
 
     public function __construct()
@@ -131,4 +134,17 @@ class Gado
 
         return $this;
     }
+
+    public function setDataAbate(?\DateTimeImmutable $dataAbate): static
+    {
+        $this->dataAbate = $dataAbate;
+
+        return $this;
+    }
+
+    public function getDataAbate(): ?\DateTimeImmutable
+    {
+        return $this->dataAbate;
+    }
+
 }
