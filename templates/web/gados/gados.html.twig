@@ -141,42 +141,6 @@
   </div>
 </div>
 
-{# ════ MODAL CANCELAR ABATE ════ #}
-<div class="modal fade" id="modalCancelarAbateGado" tabindex="-1" aria-labelledby="modalCancelarAbateGadoTitle" aria-modal="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalCancelarAbateGadoTitle">
-          <i class="bi bi-arrow-counterclockwise text-warning" aria-hidden="true"></i>
-          Cancelar Abate
-        </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2">
-          Tem certeza que deseja cancelar o abate de
-          <strong id="cancelar-abate-gado-nome-inline"></strong>?
-        </p>
-        <p class="text-muted small mb-3">
-          Se já existir outro gado vivo com o mesmo código, informe um novo código para reativar este animal.
-        </p>
-        <div id="novo-codigo-wrap-inline" class="mb-3" style="display: none;">
-          <label for="novo-codigo-input-inline" class="form-label">Novo código</label>
-          <input type="number" id="novo-codigo-input-inline" class="form-control"
-                 min="1" step="1" placeholder="Informe um novo código">
-        </div>
-        <div id="cancelar-abate-feedback-inline" role="alert" aria-live="polite"></div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
-        <button type="button" class="btn btn-warning" id="btn-confirmar-cancelar-abate-inline">
-          <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Cancelar abate
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
 {# ════ MODAL EXCLUIR GADO ════ #}
 <div class="modal fade" id="modalDeleteGado" tabindex="-1" aria-labelledby="modalDeleteGadoTitle" aria-modal="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
