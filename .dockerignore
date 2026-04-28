@@ -1,0 +1,6 @@
+.git
+.gitignore
+.codex
+node_modules
+var
+vendor
