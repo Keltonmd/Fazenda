@@ -1,0 +1,31 @@
+/* gados.css — Estilos do módulo de gado */
+
+/* Badge de contagem */
+.badge-gados-count {
+  font-size: .7rem;
+}
+
+/* Badges de Status Customizados */
+.badge-status {
+  padding: 0.35em 0.65em;
+  font-size: 0.75em;
+  font-weight: 700;
+  border-radius: 0.25rem;
+  display: inline-block;
+  text-align: center;
+}
+
+.badge-ativo {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.badge-abatido {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+/* Alerta dentro de modal */
+.alert-warning-text {
+  font-size: .85rem;
+}
