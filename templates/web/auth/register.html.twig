@@ -1,0 +1,135 @@
+{% extends 'layout/auth.html.twig' %}
+
+{% block title %}Cadastro{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ asset('css/auth/register.css') }}">
+{% endblock %}
+
+{% block body %}
+<main class="auth-page" id="register-page">
+
+  <div class="auth-card">
+
+    {# ── Logo ── #}
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <img
+          src="{{ asset('img/logo.png') }}"
+          alt="AgroPanel — Sistema de Gestão Agropecuária"
+          class="logo logo--auth"
+          width="54"
+          height="54"
+        >
+      </div>
+      <div class="auth-logo-text">
+        <span class="auth-logo-name">AgroPanel</span>
+        <span class="auth-logo-sub">Gestão Agropecuária</span>
+      </div>
+    </div>
+
+    {# ── Título ── #}
+    <h1 class="auth-title">Criar conta</h1>
+    <p class="auth-subtitle">Preencha os dados abaixo para se cadastrar.</p>
+
+    {# ── Formulário ── #}
+    <form id="registerForm" method="post" action="#" novalidate>
+
+      {# Nome #}
+      <div class="auth-input-group">
+        <label class="auth-label" for="registerNome">Nome completo</label>
+        <div style="position:relative;">
+          <i class="bi bi-person auth-input-icon"></i>
+          <input
+            type="text"
+            id="registerNome"
+            name="nome"
+            class="auth-input"
+            placeholder="Ex.: João da Silva"
+            required
+            autocomplete="name"
+          >
+        </div>
+      </div>
+
+      {# E-mail #}
+      <div class="auth-input-group">
+        <label class="auth-label" for="registerEmail">E-mail</label>
+        <div style="position:relative;">
+          <i class="bi bi-envelope auth-input-icon"></i>
+          <input
+            type="email"
+            id="registerEmail"
+            name="email"
+            class="auth-input"
+            placeholder="seu@email.com"
+            required
+            autocomplete="email"
+          >
+        </div>
+      </div>
+
+      {# Senha #}
+      <div class="auth-input-group" style="margin-bottom:.4rem;">
+        <label class="auth-label" for="registerPassword">Senha</label>
+        <div style="position:relative;">
+          <i class="bi bi-lock auth-input-icon"></i>
+          <input
+            type="password"
+            id="registerPassword"
+            name="password"
+            class="auth-input has-toggle"
+            placeholder="Mínimo 6 caracteres"
+            required
+            autocomplete="new-password"
+          >
+          <button
+            type="button"
+            id="toggleRegisterPassword"
+            class="auth-toggle-pw"
+            aria-label="Mostrar/ocultar senha"
+            tabindex="-1"
+          >
+            <i class="bi bi-eye" id="toggleRegisterPasswordIcon"></i>
+          </button>
+        </div>
+        {# Requisitos de senha #}
+        <div class="password-reqs" id="password-reqs">
+          <span class="pw-req" id="req-length"><i class="bi bi-circle"></i> Mín. 6 chars</span>
+          <span class="pw-req" id="req-upper"><i class="bi bi-circle"></i> Maiúscula</span>
+          <span class="pw-req" id="req-lower"><i class="bi bi-circle"></i> Minúscula</span>
+          <span class="pw-req" id="req-number"><i class="bi bi-circle"></i> Número</span>
+          <span class="pw-req" id="req-symbol"><i class="bi bi-circle"></i> Símbolo (!@#)</span>
+        </div>
+        {# Indicador de força da senha #}
+        <div class="password-strength" id="password-strength-bar-wrap">
+          <div class="password-strength-bar" id="password-strength-bar"></div>
+        </div>
+        <span class="password-strength-label" id="password-strength-label"></span>
+      </div>
+
+      <button type="submit" class="auth-btn" id="register-submit-btn">
+        <span id="register-btn-content">
+          <i class="bi bi-person-plus me-1"></i> Criar conta
+        </span>
+      </button>
+
+      <div class="auth-feedback" id="registerFeedback" role="alert" aria-live="polite"></div>
+
+    </form>
+
+    <hr class="auth-divider">
+
+    <p class="auth-switch">
+      Já tem conta?
+      <a href="{{ path('login') }}">Entrar</a>
+    </p>
+
+  </div>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{{ asset('js/auth/register.js') }}"></script>
+{% endblock %}

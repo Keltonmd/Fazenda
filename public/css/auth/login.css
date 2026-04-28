@@ -1,0 +1,19 @@
+/* Destaque no campo de ID do usuário */
+#quickUserId {
+  font-size: 1rem;
+  text-align: center;
+  letter-spacing: .5px;
+}
+.auth-dev-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(233,196,106,.18);
+  border: 1px solid rgba(233,196,106,.35);
+  border-radius: 6px;
+  padding: .35rem .75rem;
+  font-size: .76rem;
+  color: rgba(233,196,106,.9);
+  font-weight: 500;
+  margin-bottom: 1.25rem;
+}
