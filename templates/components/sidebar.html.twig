@@ -1,0 +1,66 @@
+<aside class="sidebar" id="sidebar" role="navigation" aria-label="Menu principal">
+  {% set nav_query = current_user_id ? {'user': current_user_id} : {} %}
+
+  <div class="sidebar-brand">
+    <div class="sidebar-brand-row">
+      <a href="{{ path('dashboard', nav_query) }}" class="sidebar-brand-link" aria-label="AgroPanel — Página inicial">
+        <img
+          src="{{ asset('img/logo.png') }}"
+          alt="AgroPanel logo"
+          class="logo logo--sidebar"
+          width="36"
+          height="36"
+        >
+        <div>
+          <div class="brand-name">AgroPanel</div>
+          <div class="brand-sub">Gestão Agropecuária</div>
+        </div>
+      </a>
+      <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Fechar menu">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  {% set currentRoute = app.request.attributes.get('_route') %}
+  <nav class="sidebar-nav" aria-label="Navegação principal">
+    <div class="nav-section">Geral</div>
+    <a href="{{ path('dashboard', nav_query) }}"
+       class="nav-link {% if currentRoute == 'dashboard' %}active{% endif %}"
+       aria-current="{% if currentRoute == 'dashboard' %}page{% endif %}">
+      <i class="bi bi-grid-1x2-fill" aria-hidden="true"></i> Dashboard
+    </a>
+
+    <div class="nav-section">Cadastros</div>
+    <a href="{{ path('fazenda_index', nav_query) }}"
+       class="nav-link {% if currentRoute in ['fazenda_index', 'fazendaForm'] %}active{% endif %}"
+       aria-current="{% if currentRoute in ['fazenda_index', 'fazendaForm'] %}page{% endif %}">
+      <i class="bi bi-house-door-fill" aria-hidden="true"></i> Fazendas
+    </a>
+    <a href="{{ path('gados_index', nav_query) }}"
+       class="nav-link {% if currentRoute == 'gados_index' %}active{% endif %}"
+       aria-current="{% if currentRoute == 'gados_index' %}page{% endif %}">
+      <i class="fa-solid fa-cow" aria-hidden="true"></i> Gados
+    </a>
+    <a href="{{ path('veterinarios_index', nav_query) }}"
+       class="nav-link {% if currentRoute == 'veterinarios_index' %}active{% endif %}"
+       aria-current="{% if currentRoute == 'veterinarios_index' %}page{% endif %}">
+      <i class="bi bi-person-badge-fill" aria-hidden="true"></i> Veterinários
+    </a>
+
+    <div class="nav-section">Relatórios</div>
+    <a href="{{ path('abates_index', nav_query) }}"
+       class="nav-link {% if currentRoute == 'abates_index' %}active{% endif %}"
+       aria-current="{% if currentRoute == 'abates_index' %}page{% endif %}">
+      <i class="bi bi-scissors" aria-hidden="true"></i> Abates
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <span class="status-dot" aria-hidden="true"></span>
+    Sistema v1.0 · Online
+  </div>
+</aside>
+
+{# Overlay para fechar sidebar no mobile #}
+<div id="sidebar-overlay" aria-hidden="true"></div>
