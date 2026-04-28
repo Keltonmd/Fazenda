@@ -1,0 +1,29 @@
+<div class="modal fade" id="modalConfirm" tabindex="-1" aria-labelledby="modalConfirmLabel" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content modal-confirm-content">
+
+      <div class="modal-body pt-4 pb-2 px-4 text-center">
+        <div class="modal-confirm-icon-wrap danger" id="modalConfirmIconWrap">
+          <i class="bi bi-trash3-fill" id="modalConfirmIcon" aria-hidden="true"></i>
+        </div>
+
+        <p class="fw-semibold mb-1 modal-confirm-message" id="modalConfirmMessage" aria-live="polite">
+          Tem certeza?
+        </p>
+        <p class="text-muted modal-confirm-subtext" id="modalConfirmSubtext">
+          Esta ação não pode ser desfeita.
+        </p>
+      </div>
+
+      <div class="modal-footer justify-content-center border-0 pb-4 gap-2">
+        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger px-4" id="modalConfirmOk">
+          <i class="bi bi-trash3 me-1" aria-hidden="true"></i>Confirmar exclusão
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

@@ -1,0 +1,322 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --auth-primary:       #2d6a4f;
+  --auth-primary-dk:    #1b4332;
+  --auth-primary-lt:    #52b788;
+  --auth-accent:        #74c69d;
+  --auth-warn:          #e9c46a;
+  --auth-danger:        #e63946;
+  --auth-success:       #40916c;
+  --auth-text:          #1a1f16;
+  --auth-muted:         #6c7a63;
+  --auth-border:        rgba(255,255,255,.18);
+  --auth-glass-bg:      rgba(255,255,255,.12);
+  --auth-glass-bg-dark: rgba(255,255,255,.08);
+  --auth-radius:        18px;
+  --auth-shadow:        0 24px 64px rgba(0,0,0,.28);
+  --auth-transition:    .22s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Body & fundo ── */
+body.auth-body {
+  font-family: 'DM Sans', system-ui, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(135deg, #0f2d1a 0%, #1b4332 35%, #2d6a4f 65%, #40916c 100%);
+  background-attachment: fixed;
+  position: relative;
+  overflow-y: auto;
+}
+
+/* Orbes decorativos de fundo */
+body.auth-body::before,
+body.auth-body::after {
+  content: '';
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+}
+body.auth-body::before {
+  width: 520px; height: 520px;
+  top: -140px; right: -120px;
+  background: radial-gradient(circle, rgba(116,198,157,.22) 0%, transparent 70%);
+  animation: float-orb 8s ease-in-out infinite alternate;
+}
+body.auth-body::after {
+  width: 400px; height: 400px;
+  bottom: -100px; left: -80px;
+  background: radial-gradient(circle, rgba(82,183,136,.18) 0%, transparent 70%);
+  animation: float-orb 10s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes float-orb {
+  from { transform: translate(0, 0) scale(1);   }
+  to   { transform: translate(30px, 20px) scale(1.06); }
+}
+
+/* ── Wrapper de página ── */
+.auth-page {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem 1rem;
+}
+
+/* ── Card glassmorphism ── */
+.auth-card {
+  background: rgba(255,255,255,.10);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255,255,255,.20);
+  border-radius: var(--auth-radius);
+  box-shadow: var(--auth-shadow);
+  width: 100%;
+  max-width: 390px;
+  padding: 1.5rem 1.75rem;
+  animation: card-in .5s var(--auth-transition) both;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(24px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);  }
+}
+
+/* ── Cabeçalho / logo ── */
+.auth-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+  margin-bottom: .9rem;
+}
+.auth-logo-icon {
+  /* Dimensões e overflow controlados por logo.css */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.auth-logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.auth-logo-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -.3px;
+}
+.auth-logo-sub {
+  font-size: .68rem;
+  color: rgba(255,255,255,.6);
+  font-weight: 400;
+}
+
+/* ── Título e subtítulo ── */
+.auth-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  margin-bottom: .2rem;
+}
+.auth-subtitle {
+  font-size: .78rem;
+  color: rgba(255,255,255,.62);
+  text-align: center;
+  margin-bottom: .9rem;
+  line-height: 1.4;
+}
+
+/* ── Divisor ── */
+.auth-divider {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,.15);
+  margin: .7rem 0;
+}
+
+/* ── Labels ── */
+.auth-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: rgba(255,255,255,.8);
+  margin-bottom: .2rem;
+  display: block;
+}
+
+/* ── Campos de formulário ── */
+.auth-input {
+  width: 100%;
+  padding: .48rem .8rem;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: .835rem;
+  transition: border-color var(--auth-transition), background var(--auth-transition), box-shadow var(--auth-transition);
+  outline: none;
+}
+.auth-input::placeholder { color: rgba(255,255,255,.38); }
+.auth-input:focus {
+  border-color: var(--auth-accent);
+  background: rgba(255,255,255,.15);
+  box-shadow: 0 0 0 3px rgba(116,198,157,.25);
+}
+.auth-input::-webkit-inner-spin-button,
+.auth-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.auth-input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+
+/* ── Grupo input com ícone ── */
+.auth-input-group {
+  position: relative;
+  margin-bottom: .5rem;
+}
+.auth-input-group .auth-input-icon {
+  position: absolute;
+  left: .85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(255,255,255,.45);
+  font-size: .95rem;
+  pointer-events: none;
+}
+.auth-input-group .auth-input { padding-left: 2.5rem; }
+
+/* ── Botão principal ── */
+.auth-btn {
+  width: 100%;
+  padding: .52rem 1rem;
+  background: linear-gradient(135deg, var(--auth-primary-lt), var(--auth-accent));
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: inherit;
+  font-size: .855rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: .3px;
+  box-shadow: 0 3px 10px rgba(52,183,136,.35);
+  transition: transform var(--auth-transition), box-shadow var(--auth-transition), filter var(--auth-transition);
+  margin-top: .2rem;
+}
+.auth-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+  box-shadow: 0 10px 24px rgba(52,183,136,.45);
+}
+.auth-btn:active { transform: translateY(0); }
+.auth-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Botão secundário (outline) ── */
+.auth-btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.35);
+  color: rgba(255,255,255,.85);
+  box-shadow: none;
+}
+.auth-btn-outline:hover {
+  background: rgba(255,255,255,.1);
+  box-shadow: none;
+  filter: none;
+  border-color: rgba(255,255,255,.6);
+}
+
+/* ── Feedback ── */
+.auth-feedback {
+  min-height: 1.5rem;
+  font-size: .82rem;
+  text-align: center;
+  margin-top: .75rem;
+  border-radius: 8px;
+  padding: 0;
+  transition: all var(--auth-transition);
+}
+.auth-feedback:not(:empty) { padding: .55rem .9rem; }
+.auth-feedback.is-success {
+  background: rgba(64,145,108,.25);
+  color: #b7f5d4;
+  border: 1px solid rgba(64,145,108,.4);
+}
+.auth-feedback.is-danger {
+  background: rgba(230,57,70,.22);
+  color: #ffb3b8;
+  border: 1px solid rgba(230,57,70,.35);
+}
+.auth-feedback.is-info {
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.75);
+  border: 1px solid rgba(255,255,255,.18);
+}
+
+/* ── Link de alternância (Login ↔ Cadastro) ── */
+.auth-switch {
+  text-align: center;
+  font-size: .855rem;
+  color: rgba(255,255,255,.55);
+  margin-top: 1rem;
+}
+.auth-switch a {
+  color: var(--auth-accent);
+  font-weight: 600;
+  text-decoration: none;
+  transition: color var(--auth-transition);
+}
+.auth-switch a:hover { color: #fff; text-decoration: underline; }
+
+/* ── Spinner de loading ── */
+.auth-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+  margin-right: .4rem;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Botão toggle senha (olho) ── */
+.auth-toggle-pw {
+  position: absolute;
+  right: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: rgba(255,255,255,.45);
+  font-size: .95rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color var(--auth-transition);
+}
+.auth-toggle-pw:hover { color: rgba(255,255,255,.85); }
+
+/* ── Input com ícone à direita também (toggle) ── */
+.auth-input-group .auth-input.has-toggle { padding-right: 2.5rem; }
+
+/* ── Badge modo dev (mantido por compatibilidade, pode ser removido) ── */
+.auth-dev-badge {
+  display: none;
+}
+
+/* ── Responsivo ── */
+@media (max-width: 480px) {
+  .auth-card { padding: 1.1rem 1rem; }
+  .auth-title { font-size: 1rem; }
+}

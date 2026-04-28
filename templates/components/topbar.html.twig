@@ -1,0 +1,145 @@
+<header class="topbar">
+  {% set nav_query = current_user_id ? {'user': current_user_id} : {} %}
+  <div>
+    <div class="page-title">{{ page_title|default('Dashboard') }}</div>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ path('dashboard', nav_query) }}">Início</a></li>
+        {{ breadcrumb|default('')|raw }}
+      </ol>
+    </nav>
+  </div>
+  <div class="topbar-right">
+    <!-- Mobile toggle -->
+    <button class="btn btn-sm btn-light d-md-none border" id="mobileToggleBtn"
+            aria-label="Abrir menu" aria-expanded="false" aria-controls="sidebar">
+      <i class="bi bi-list fs-5" aria-hidden="true"></i>
+    </button>
+    <!-- User dropdown -->
+    <div class="dropdown">
+      <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2"
+              data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="bi bi-person-circle fs-5 text-secondary"></i>
+        <span class="d-none d-md-inline fw-medium" id="topbar-user-name">Usuário</span>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-end shadow-sm border">
+        <li>
+          <h6 class="dropdown-header d-flex align-items-center gap-2">
+            <i class="bi bi-person-circle"></i>
+            <span id="topbar-user-name-menu">Minha Conta</span>
+          </h6>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <button class="dropdown-item" id="btn-ver-dados" type="button">
+            <i class="bi bi-person-lines-fill me-2"></i>Meus dados
+          </button>
+        </li>
+        <li>
+          <button class="dropdown-item" id="btn-editar-conta" type="button">
+            <i class="bi bi-pencil-square me-2"></i>Editar conta
+          </button>
+        </li>
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <button class="dropdown-item text-danger" id="btn-deletar-conta" type="button">
+            <i class="bi bi-trash me-2"></i>Excluir conta
+          </button>
+        </li>
+        <li>
+          <button class="dropdown-item text-danger" id="btn-logout" type="button">
+            <i class="bi bi-box-arrow-right me-2"></i>Sair
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+{# ════ MODAL MEUS DADOS ════ #}
+<div class="modal fade" id="modalMeusDados" tabindex="-1" aria-labelledby="modalMeusDadosTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalMeusDadosTitle">
+          <i class="bi bi-person-lines-fill text-primary me-2"></i>Meus Dados
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="meus-dados-content">
+          <div class="text-center py-3">
+            <span class="spinner-border spinner-border-sm"></span> Carregando...
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL EDITAR CONTA ════ #}
+<div class="modal fade" id="modalEditarConta" tabindex="-1" aria-labelledby="modalEditarContaTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formEditarConta">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEditarContaTitle">
+            <i class="bi bi-pencil-square text-primary me-2"></i>Editar Conta
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nome</label>
+            <input type="text" id="editNome" class="form-control" placeholder="Seu nome" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">E-mail</label>
+            <input type="email" id="editEmail" class="form-control" placeholder="seu@email.com" required>
+          </div>
+          <hr>
+          <p class="text-muted small mb-2">Deixe em branco para não alterar a senha.</p>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nova senha</label>
+            <input type="password" id="editSenha" class="form-control" placeholder="Nova senha (opcional)" autocomplete="new-password">
+          </div>
+          <div id="editar-conta-feedback" class="mt-2"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Salvar alterações
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL EXCLUIR CONTA ════ #}
+<div class="modal fade" id="modalExcluirConta" tabindex="-1" aria-labelledby="modalExcluirContaTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger" id="modalExcluirContaTitle">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>Excluir Conta
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir sua conta? <strong>Esta ação é permanente e não pode ser desfeita.</strong></p>
+        <p class="text-muted small">Todos os seus dados (fazendas, gados, veterinários) serão removidos.</p>
+        <div id="excluir-conta-feedback" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btn-confirmar-excluir-conta">
+          <i class="bi bi-trash me-1"></i>Excluir minha conta
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,163 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fazendas{% endblock %}
+{% block page_title %}Fazendas{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Fazendas</li>{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ asset('css/fazenda/fazendas.css') }}">
+{% endblock %}
+
+{% block body %}
+
+<div class="page-toolbar">
+  <h5>
+    <i class="bi bi-house-door-fill text-success" aria-hidden="true"></i>
+    Lista de Fazendas
+    <span class="badge-count ms-1" id="badge-fazendas-count">0</span>
+  </h5>
+  <button type="button" class="btn btn-primary" id="btn-nova-fazenda">
+    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Nova Fazenda
+  </button>
+</div>
+
+{# ── FILTRO CLIENT-SIDE ── #}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-5">
+        <div class="search-wrap">
+          <i class="bi bi-search search-icon" aria-hidden="true"></i>
+          <input type="text" id="filtro-fazenda" class="form-control form-control-sm"
+                 placeholder="Buscar por nome ou responsável..."
+                 aria-label="Buscar fazenda">
+        </div>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-sm btn-light" id="btn-limpar-filtro">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── TABELA ── #}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th class="d-none d-sm-table-cell">Responsável</th>
+          <th class="d-none d-md-table-cell">Área (ha)</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="fazendas-tbody">
+        <tr><td colspan="4" class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando fazendas...
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <button class="btn btn-sm btn-light" id="btn-prev">
+      <i class="bi bi-chevron-left"></i> Anterior
+    </button>
+
+    <span id="pagination-info" class="text-muted small">
+      Página 1 de 1
+    </span>
+
+    <button class="btn btn-sm btn-light" id="btn-next">
+      Próxima <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+{# ════ MODAL CADASTRO / EDIÇÃO DE FAZENDA ════ #}
+<div class="modal fade" id="modalFazenda" tabindex="-1" aria-labelledby="modalFazendaTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="formFazendaModal">
+        <input type="hidden" id="fazendaModalId">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalFazendaTitle">
+            <i class="bi bi-house-door-fill text-success" aria-hidden="true"></i>
+            Nova Fazenda
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="fazendaModalNome">Nome da Fazenda <span class="text-danger" aria-hidden="true">*</span></label>
+              <input type="text" id="fazendaModalNome" class="form-control"
+                     placeholder="Ex.: Fazenda Boa Vista" required aria-required="true">
+            </div>
+            <div class="col-12 col-md-7">
+              <label class="form-label" for="fazendaModalResponsavel">Responsável <span class="text-danger" aria-hidden="true">*</span></label>
+              <input type="text" id="fazendaModalResponsavel" class="form-control"
+                     placeholder="Nome do proprietário" required aria-required="true">
+            </div>
+            <div class="col-12 col-md-5">
+              <label class="form-label" for="fazendaModalTamanho">Área (hectares)</label>
+              <div class="input-group">
+                <input type="number" id="fazendaModalTamanho" class="form-control"
+                       step="0.01" min="0" placeholder="0.00">
+                <span class="input-group-text">ha</span>
+              </div>
+            </div>
+          </div>
+          <div id="fazenda-modal-feedback" class="mt-3" role="alert" aria-live="polite"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+            <span id="fazendaModalBtnLabel">Cadastrar Fazenda</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL CONFIRMAR DELETE ════ #}
+<div class="modal fade" id="modalDeleteFazenda" tabindex="-1" aria-labelledby="modalDeleteFazendaTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body pt-4 pb-2 px-4 text-center">
+        <div class="modal-confirm-icon-wrap danger">
+          <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+        </div>
+        <p class="fw-semibold mb-1" style="font-size:.95rem;">
+          Excluir fazenda <strong id="delete-fazenda-nome"></strong>?
+        </p>
+        <p class="text-muted" style="font-size:.82rem;">
+          Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pb-4 gap-2">
+        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger px-4" id="btn-confirmar-delete-fazenda">
+          <i class="bi bi-trash3 me-1" aria-hidden="true"></i>Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{{ asset('js/fazenda/fazendas.js') }}"></script>
+{% endblock %}
