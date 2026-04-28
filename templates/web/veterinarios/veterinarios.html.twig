@@ -1,0 +1,214 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Veterinários{% endblock %}
+{% block page_title %}Veterinários{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Veterinários</li>{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ asset('css/veterinarios/veterinarios.css') }}">
+{% endblock %}
+
+{% block body %}
+
+<div class="page-toolbar">
+  <h5>
+    <i class="bi bi-person-badge-fill text-primary" aria-hidden="true"></i>
+    Lista de Veterinários
+    <span class="badge-count ms-1" id="badge-vets-count">0</span>
+  </h5>
+  <button class="btn btn-primary" id="btn-novo-vet"
+          data-bs-toggle="modal" data-bs-target="#modalVeterinario">
+    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Novo Veterinário
+  </button>
+</div>
+
+{# ── FILTRO CLIENT-SIDE ── #}
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-4">
+        <div class="search-wrap">
+          <i class="bi bi-search search-icon" aria-hidden="true"></i>
+          <input type="text" id="filtro-vet-q"
+                 class="form-control form-control-sm"
+                 placeholder="Buscar por nome ou CRMV..."
+                 aria-label="Buscar veterinário">
+        </div>
+      </div>
+      <div class="col-auto">
+        <button type="button" class="btn btn-sm btn-light" id="btn-limpar-filtro-vet">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── TABELA ── #}
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th class="d-none d-sm-table-cell">CRMV</th>
+          <th class="d-none d-md-table-cell">Fazendas</th>
+          <th class="text-end">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="vets-tbody">
+        <tr><td colspan="4" class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando veterinários...
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <button class="btn btn-sm btn-light" id="btn-prev">
+      <i class="bi bi-chevron-left"></i> Anterior
+    </button>
+
+    <span id="pagination-info" class="text-muted small">
+      Página 1 de 1
+    </span>
+
+    <button class="btn btn-sm btn-light" id="btn-next">
+      Próxima <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+{# ════ MODAL CADASTRO/EDIÇÃO ════ #}
+<div class="modal fade" id="modalVeterinario" tabindex="-1" aria-labelledby="modalVetTitle" aria-modal="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formVeterinario">
+        <input type="hidden" id="vetId">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalVetTitle">
+            <i class="bi bi-person-badge-fill text-primary" aria-hidden="true"></i>Novo Veterinário
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label" for="vetNome">Nome completo <span class="text-danger" aria-hidden="true">*</span></label>
+              <input type="text" id="vetNome" class="form-control"
+                     placeholder="Ex.: Dr. Carlos Silva" required aria-required="true">
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="vetCrmv">CRMV <span class="text-danger" aria-hidden="true">*</span></label>
+              <input type="text" id="vetCrmv" class="form-control"
+                     placeholder="Ex.: CRMV-SP 12345"
+                     pattern="^CRMV-(SP|RJ|MG)\s\d{4,6}$"
+                     title="Formato: CRMV-SP 12345 (estado: SP, RJ ou MG)"
+                     required aria-required="true">
+            </div>
+            <div class="col-12" id="vetFazendaWrap">
+              <label class="form-label" for="vetFazenda">Fazenda inicial <small class="text-muted">(opcional)</small></label>
+              <select id="vetFazenda" class="form-select">
+                <option value="">Sem fazenda inicial</option>
+              </select>
+              <div class="form-text">Você pode cadastrar sem fazenda e adicionar vínculos depois.</div>
+            </div>
+          </div>
+          <div id="vet-form-feedback" class="mt-3" role="alert" aria-live="polite"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1" aria-hidden="true"></i>
+            <span id="vetBtnLabel">Cadastrar</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL GERENCIAR FAZENDAS DO VET ════ #}
+<div class="modal fade" id="modalVetFazendas" tabindex="-1" aria-labelledby="modalVetFazendasTitle" aria-modal="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalVetFazendasTitle">
+          <i class="bi bi-house-door-fill text-success" aria-hidden="true"></i>Fazendas do Veterinário
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted mb-3">
+          Veterinário: <strong id="vet-fazendas-nome"></strong>
+        </p>
+        <div class="alert alert-light border small">
+          Use esta tela para adicionar ou remover fazendas vinculadas a este veterinário.
+        </div>
+
+        <div class="mb-3">
+          <h6 class="fw-semibold mb-2">
+            <i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>Fazendas vinculadas
+          </h6>
+          <div id="vet-fazendas-vinculadas-list">
+            <p class="text-muted small">Nenhuma fazenda vinculada.</p>
+          </div>
+        </div>
+
+        <hr>
+
+        <div class="mb-2">
+          <h6 class="fw-semibold mb-2">
+            <i class="bi bi-plus-circle text-primary me-1" aria-hidden="true"></i>Adicionar fazenda
+          </h6>
+          <div class="d-flex gap-2">
+            <select id="vetFazendaParaAdicionar" class="form-select form-select-sm" aria-label="Selecionar fazenda para adicionar">
+              <option value="">Selecione a fazenda...</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-primary text-nowrap" id="btn-add-fazenda-vet">
+              <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Vincular
+            </button>
+          </div>
+          <div id="vet-fazendas-feedback" class="mt-2" role="alert" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL CONFIRMAR DELETE ════ #}
+<div class="modal fade" id="modalDeleteVet" tabindex="-1" aria-labelledby="modalDeleteVetTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content">
+      <div class="modal-body pt-4 pb-2 px-4 text-center">
+        <div class="modal-confirm-icon-wrap danger">
+          <i class="bi bi-trash3-fill" aria-hidden="true"></i>
+        </div>
+        <p class="fw-semibold mb-1" style="font-size:.95rem;">
+          Excluir veterinário <strong id="delete-vet-nome"></strong>?
+        </p>
+        <p class="text-muted" style="font-size:.82rem;">Esta ação não pode ser desfeita.</p>
+      </div>
+      <div class="modal-footer justify-content-center border-0 pb-4 gap-2">
+        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-danger px-4" id="btn-confirmar-delete-vet">
+          <i class="bi bi-trash3 me-1" aria-hidden="true"></i>Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL DE CONFIRMAÇÃO GENÉRICO ════ #}
+{% include 'components/modal_confirm.html.twig' %}
+
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{{ asset('js/veterinarios/veterinarios.js') }}"></script>
+{% endblock %}
