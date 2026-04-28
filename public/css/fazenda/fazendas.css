@@ -1,0 +1,24 @@
+/* fazendas.css — Estilos do módulo de fazendas */
+
+/* Badge com tamanho reduzido */
+.badge-sm {
+  font-size: 0.7rem !important;
+}
+
+/* Busca com ícone */
+.search-wrap {
+  position: relative;
+}
+
+.search-wrap .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.search-wrap .form-control {
+  padding-left: 2rem;
+}
