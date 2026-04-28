@@ -1,0 +1,244 @@
+/* ── Tokens ── */
+:root {
+  --sidebar-w:      260px;
+  --bg:             #f0f4ec;
+  --surface:        #ffffff;
+  --primary:        #2d6a4f;
+  --primary-dk:     #1b4332;
+  --primary-lt:     #52b788;
+  --accent:         #74c69d;
+  --warn:           #e9c46a;
+  --danger:         #c1440e;
+  --info:           #4895ef;
+  --text:           #1a1f16;
+  --muted:          #6c7a63;
+  --border:         #dde5d4;
+  --radius:         10px;
+  --radius-lg:      14px;
+  --shadow-sm:      0 1px 4px rgba(0,0,0,.07);
+  --shadow-md:      0 4px 20px rgba(0,0,0,.09);
+  --transition:     .18s ease;
+
+  /* Z-index scale */
+  --z-content:  10;
+  --z-topbar:   100;
+  --z-overlay:  290;
+  --z-sidebar:  300;
+  --z-modal:    500;
+  --z-toast:    9999;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  min-height: 100vh;
+  font-size: .875rem;
+  overflow-x: hidden;
+}
+
+/* ── Layout principal ── */
+.main-wrapper {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-width: 0;
+}
+
+.page-content {
+  padding: 1rem 1.25rem;
+  flex: 1;
+}
+
+/* ── Cards globais ── */
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  background: var(--surface);
+}
+.card-header {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+  padding: .55rem .9rem;
+  font-weight: 600;
+  font-size: .82rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ── Tabelas ── */
+.table { font-size: .835rem; }
+.table thead th {
+  font-weight: 600;
+  font-size: .69rem;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 2px solid var(--border);
+  padding: .45rem .8rem;
+  white-space: nowrap;
+}
+.table tbody td { padding: .5rem .8rem; vertical-align: middle; }
+.table tbody tr { transition: background var(--transition); }
+.table tbody tr:hover { background: #f5f9f4; }
+
+/* ── Badges genéricas ── */
+.badge-status {
+  font-size: .7rem;
+  font-weight: 600;
+  padding: .3em .7em;
+  border-radius: 6px;
+  display: inline-block;
+}
+.badge-ativo      { background: #d8f3dc; color: #1b4332; }
+.badge-inativo    { background: #f1f1f1; color: #555; }
+.badge-abatido    { background: #fee2e2; color: var(--danger); }
+.badge-quarentena { background: #fef9e7; color: #7d5a00; }
+
+/* ── Botões globais ── */
+.btn-primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  font-weight: 600;
+  font-size: .85rem;
+}
+.btn-primary:hover { background: var(--primary-dk); border-color: var(--primary-dk); }
+.btn-outline-primary { color: var(--primary); border-color: var(--primary); font-size: .85rem; }
+.btn-outline-primary:hover { background: var(--primary); color: #fff; }
+.btn-danger-soft {
+  background: #fee2e2; color: var(--danger); border: none;
+  font-size: .82rem; font-weight: 500;
+}
+.btn-danger-soft:hover { background: var(--danger); color: #fff; }
+
+/* ── Formulários ── */
+.form-label { font-size: .83rem; font-weight: 600; margin-bottom: .3rem; color: var(--text); }
+.form-control, .form-select {
+  font-size: .875rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(116,198,157,.2);
+  outline: none;
+}
+.input-group-text {
+  border-color: var(--border);
+  background: #f8fbf6;
+  font-size: .875rem;
+}
+
+/* ── Busca ── */
+.search-wrap { position: relative; }
+.search-wrap .search-icon {
+  position: absolute; left: .75rem; top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted); font-size: .85rem;
+  pointer-events: none;
+}
+.search-wrap input { padding-left: 2.1rem; }
+
+/* ── Modal ── */
+.modal-header { border-bottom: 1px solid var(--border); padding: .75rem 1.1rem; }
+.modal-footer { border-top: 1px solid var(--border); padding: .6rem 1.1rem; }
+.modal-title { font-size: .9rem; font-weight: 700; display: flex; align-items: center; gap: .45rem; }
+.modal-content { border-radius: var(--radius-lg) !important; border: 1px solid var(--border); }
+
+/* ── Toolbar de página ── */
+.page-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .8rem;
+}
+.page-toolbar h5 {
+  font-size: .875rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+}
+
+/* ── Paginação ── */
+.pagination .page-link {
+  font-size: .82rem;
+  color: var(--primary);
+  border-color: var(--border);
+}
+.pagination .page-item.active .page-link {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ── Utilitários de texto ── */
+.text-small { font-size: .78rem !important; }
+.text-xs    { font-size: .76rem !important; }
+.text-sm    { font-size: .875rem !important; }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVIDADE
+   ═══════════════════════════════════════════════ */
+
+/* ── Tablet (≤ 1024px) ── */
+@media (max-width: 1024px) {
+  .page-content { padding: 1.15rem 1.25rem; }
+}
+
+/* ── Mobile/Tablet (≤ 768px) ── */
+@media (max-width: 768px) {
+  /* Layout raiz */
+  .main-wrapper { margin-left: 0; }
+  .page-content { padding: .875rem; }
+
+  /* Toolbar */
+  .page-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .6rem;
+    margin-bottom: 1rem;
+  }
+  .page-toolbar > .btn,
+  .page-toolbar > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Tabelas */
+  .table { font-size: .8rem; }
+  .table thead th,
+  .table tbody td { padding: .6rem .75rem; }
+
+  /* Cards */
+  .card-header { padding: .75rem 1rem; }
+
+  /* Modais */
+  .modal-dialog { margin: .75rem; }
+  .modal-body { padding: 1rem; }
+  .modal-header, .modal-footer { padding: .75rem 1rem; }
+}
+
+/* ── Mobile (≤ 576px) ── */
+@media (max-width: 576px) {
+  .page-content { padding: .875rem; }
+
+  /* Font-size base ligeiramente menor */
+  body { font-size: .875rem; }
+
+  /* Botões em bloco no mobile */
+  .modal-footer .btn { min-height: 44px; }
+
+  /* Garantir que nada ultrapasse a viewport */
+  img, table, .table-responsive { max-width: 100%; }
+}

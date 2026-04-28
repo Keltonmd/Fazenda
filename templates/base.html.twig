@@ -1,23 +1,69 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="UTF-8">
-        <title>{% block title %}Welcome!{% endblock %}</title>
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-        {% block stylesheets %}
-        {% endblock %}
+<html lang="pt-BR">
+{% set current_user_id = app.user ? app.user.id : app.request.query.get('user') %}
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}AgroPanel{% endblock %} — AgroPanel</title>
+  <meta name="description" content="Sistema de gestão agropecuária — AgroPanel">
 
-        {% block javascripts %}
-        {% endblock %}
+  <!-- Favicon & App Icon -->
+  <link rel="icon" type="image/x-icon" href="{{ asset('img/favicon.ico') }}">
+  <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('img/favicon-32x32.png') }}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('img/favicon-16x16.png') }}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('img/apple-touch-icon.png') }}">
 
-        {% set frankenphpHotReload = app.request.server.get('FRANKENPHP_HOT_RELOAD') %}
-        {% if frankenphpHotReload %}
-        <meta name="frankenphp-hot-reload:url" content="{{ frankenphpHotReload }}">
-        <script src="https://cdn.jsdelivr.net/npm/idiomorph"></script>
-        <script src="https://cdn.jsdelivr.net/npm/frankenphp-hot-reload/+esm" type="module"></script>
-        {% endif %}
-    </head>
-    <body>
-        {% block body %}{% endblock %}
-    </body>
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <!-- CSS Global -->
+  <link rel="stylesheet" href="{{ asset('css/base.css') }}">
+
+  <!-- CSS -->
+   <link rel="stylesheet" href="{{ asset('css/logo/logo.css') }}">
+  <!-- CSS dos Componentes -->
+  <link rel="stylesheet" href="{{ asset('css/components/sidebar.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/components/topbar.css') }}">
+  <link rel="stylesheet" href="{{ asset('css/components/flash_messages.css')}}">
+  <link rel="stylesheet" href="{{ asset('css/components/components.css') }}">
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body data-user-id="{{ current_user_id|default('') }}">
+
+  {% include 'components/sidebar.html.twig' %}
+
+  <div class="main-wrapper">
+    {% set _page_title = block('page_title') %}
+    {% set _breadcrumb = block('breadcrumb') %}
+
+    {% include 'components/topbar.html.twig' with {'page_title': _page_title, 'breadcrumb': _breadcrumb} %}
+    
+    {% include 'components/flash_messages.html.twig' %}
+
+    <main class="page-content">
+      {% block body %}{% endblock %}
+    </main>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- JS globais -->
+  <script src="{{ asset('js/app.js') }}"></script>
+  <script src="{{ asset('js/components/sidebar.js') }}"></script>
+  <script src="{{ asset('js/components/topbar.js') }}"></script>
+  <script src="{{ asset('js/components/flash_messages.js') }}"></script>
+
+  <!-- JS das Paginas -->
+  {% block extra_js %}{% endblock %}
+
+</body>
 </html>
+
