@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Dashboard</li>{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ asset('css/fazenda/dashboard.css') }}">
+{% endblock %}
+
+{% block body %}
+
+{# ── STAT CARDS — LINHA 1: contagem geral ── #}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon green"><i class="bi bi-house-door-fill"></i></div>
+      <div>
+        <div class="stat-value" id="stat-fazendas">—</div>
+        <div class="stat-label">Fazendas cadastradas</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon yellow"><i class="fa-solid fa-cow"></i></div>
+      <div>
+        <div class="stat-value" id="stat-gados">—</div>
+        <div class="stat-label">Gados vivos</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon blue"><i class="bi bi-person-badge-fill"></i></div>
+      <div>
+        <div class="stat-value" id="stat-veterinarios">—</div>
+        <div class="stat-label">Veterinários</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon red"><i class="bi bi-scissors"></i></div>
+      <div>
+        <div class="stat-value" id="stat-abatidos">—</div>
+        <div class="stat-label">Gados abatidos</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── STAT CARDS — LINHA 2: produção semanal ── #}
+<div class="row g-3 mb-4">
+  <div class="col-12 col-md-4">
+    <div class="stat-card stat-card-prod">
+      <div class="stat-icon teal"><i class="bi bi-droplet-fill"></i></div>
+      <div class="flex-grow-1">
+        <div class="stat-value" id="stat-leite-semanal">—</div>
+        <div class="stat-label">Litros de leite / semana</div>
+        <div class="stat-sublabel" id="stat-leite-detalhe"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="stat-card stat-card-prod">
+      <div class="stat-icon orange"><i class="bi bi-box-seam-fill"></i></div>
+      <div class="flex-grow-1">
+        <div class="stat-value" id="stat-racao-semanal">—</div>
+        <div class="stat-label">Kg de ração / semana</div>
+        <div class="stat-sublabel" id="stat-racao-detalhe"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="stat-card stat-card-prod stat-card-alert">
+      <div class="stat-icon purple"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div class="flex-grow-1">
+        <div class="stat-value" id="stat-jovens-alto-consumo">—</div>
+        <div class="stat-label">Animais jovens (até 1 ano) que consomem mais de 500 kg de ração por semana</div>
+        <div class="stat-sublabel" id="stat-jovens-detalhe"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── TABELAS RECENTES ── #}
+<div class="row g-3">
+
+  {# Últimos gados #}
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="fa-solid fa-cow"></i>  Gados Recentes</span>
+        <a href="{{ path('gados_index') }}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Peso</th>
+              <th>Leite</th>
+              <th>Nascimento</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-gados-tbody">
+            <tr><td colspan="5" class="text-center text-muted py-4">
+              <span class="spinner-border spinner-border-sm me-2"></span>Carregando...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  {# Fazendas + Veterinários síntese #}
+  <div class="col-lg-5">
+
+    {# Fazendas card #}
+    <div class="card mb-3">
+      <div class="card-header">
+        <span><i class="bi bi-house-door-fill me-2 text-success"></i>Fazendas</span>
+        <a href="{{ path('fazenda_index') }}" class="btn btn-sm btn-outline-primary">Gerenciar</a>
+      </div>
+      <div class="list-group list-group-flush" id="dashboard-fazendas-list">
+        <div class="list-group-item text-center text-muted py-3 text-sm">
+          <span class="spinner-border spinner-border-sm me-2"></span>Carregando...
+        </div>
+      </div>
+    </div>
+
+    {# Veterinários card #}
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-person-badge-fill me-2 text-primary"></i>Veterinários</span>
+        <a href="{{ path('veterinarios_index') }}" class="btn btn-sm btn-outline-primary">Gerenciar</a>
+      </div>
+      <div class="list-group list-group-flush" id="dashboard-vets-list">
+        <div class="list-group-item text-center text-muted py-3 text-sm">
+          <span class="spinner-border spinner-border-sm me-2"></span>Carregando...
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{{ asset('js/fazenda/dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,79 @@
+
+#register-page .auth-card {
+  padding: 1.15rem 1.5rem;
+}
+
+/* ── Painel de requisitos de senha ── */
+.password-reqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .15rem .5rem;
+  margin-top: .25rem;
+  margin-bottom: .1rem;
+}
+.pw-req {
+  font-size: .65rem;
+  color: rgba(255,255,255,.45);
+  display: flex;
+  align-items: center;
+  gap: .2rem;
+  transition: color .25s ease;
+}
+.pw-req i {
+  font-size: .65rem;
+  transition: color .25s ease;
+}
+.pw-req.ok {
+  color: #74c69d;
+}
+.pw-req.ok i {
+  color: #40916c;
+}
+
+/* Indicador de força da senha */
+.password-strength {
+  height: 3px;
+  border-radius: 4px;
+  margin-top: .25rem;
+  background: rgba(255,255,255,.12);
+  overflow: hidden;
+  transition: all .3s ease;
+}
+.password-strength-bar {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width .35s ease, background .35s ease;
+}
+.password-strength-bar.weak   { width: 33%; background: #e63946; }
+.password-strength-bar.medium { width: 66%; background: #e9c46a; }
+.password-strength-bar.strong { width: 100%; background: #40916c; }
+
+.password-strength-label {
+  font-size: .64rem;
+  margin-top: .15rem;
+  color: rgba(255,255,255,.5);
+  transition: color .3s ease;
+}
+.password-strength-label.weak   { color: #ff8fa3; }
+.password-strength-label.medium { color: #e9c46a; }
+.password-strength-label.strong { color: #74c69d; }
+
+#register-page .auth-input-group {
+  margin-bottom: .35rem;
+}
+#register-page .auth-logo {
+  margin-bottom: .55rem;
+}
+#register-page .auth-title {
+  margin-bottom: .1rem;
+}
+#register-page .auth-subtitle {
+  margin-bottom: .55rem;
+}
+#register-page .auth-divider {
+  margin: .5rem 0;
+}
+#register-page .auth-switch {
+  margin-top: .3rem;
+}

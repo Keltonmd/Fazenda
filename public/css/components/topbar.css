@@ -1,0 +1,74 @@
+/* Estilos específicos da Topbar */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: .45rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: var(--z-topbar, 100);
+  box-shadow: var(--shadow-sm);
+  gap: .6rem;
+}
+
+.topbar .page-title {
+  font-size: .875rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topbar .breadcrumb {
+  margin: 0;
+  font-size: .78rem;
+}
+.topbar .breadcrumb-item a {
+  color: var(--primary);
+  text-decoration: none;
+}
+.topbar .breadcrumb-item a:hover { text-decoration: underline; }
+
+/* Grupo direito (toggle + avatar) */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-shrink: 0;
+}
+
+/* Botão mobile toggle */
+#mobileToggleBtn {
+  min-width: 36px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ═══════════════════════════════ RESPONSIVO ═══════════════════════════════ */
+@media (max-width: 768px) {
+  .topbar {
+    padding: .65rem 1rem;
+  }
+  .topbar .page-title {
+    font-size: .9rem;
+    max-width: 160px;
+  }
+}
+
+@media (max-width: 576px) {
+  .topbar {
+    padding: .6rem .875rem;
+  }
+  /* Ocultar breadcrumb em telas muito pequenas */
+  .topbar nav[aria-label="breadcrumb"] {
+    display: none;
+  }
+  .topbar .page-title {
+    max-width: 130px;
+  }
+}

@@ -1,0 +1,22 @@
+/* veterinarios.css — Estilos do módulo de veterinários */
+
+/* Estilo para a coluna CRMV */
+.crmv-text {
+  font-size: 0.82rem;
+  font-family: 'DM Mono', monospace;
+  color: #334155;
+  letter-spacing: .3px;
+}
+
+/* Badge para nomes de fazendas vinculadas */
+.badge-fazenda {
+  font-size: 0.72rem;
+}
+
+/* Botão extra-pequeno para ação inline */
+.btn-xs {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  line-height: 1.4;
+  border-radius: 6px;
+}

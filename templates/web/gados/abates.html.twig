@@ -1,0 +1,196 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Abates{% endblock %}
+{% block page_title %}Abates{% endblock %}
+{% block breadcrumb %}<li class="breadcrumb-item active">Abates</li>{% endblock %}
+
+{% block extra_css %}
+  <link rel="stylesheet" href="{{ asset('css/gados/abates.css') }}">
+{% endblock %}
+
+{% block body %}
+
+{# ── CABEÇALHO DA PÁGINA ── #}
+<div class="page-toolbar">
+  <div class="abates-header">
+    <div class="abates-title-icon">
+      <i class="bi bi-scissors"></i>
+    </div>
+    <div>
+      <h5 class="mb-0">
+        Gerenciamento de Abates
+      </h5>
+      <p class="text-muted mb-0" style="font-size:.78rem;">Lista de animais prontos para abate e histórico</p>
+    </div>
+  </div>
+  <div class="d-flex gap-2">
+    <div class="btn-group" role="group">
+      <input type="radio" class="btn-check" name="tabAbates" id="tab-para-abate" autocomplete="off" checked>
+      <label class="btn btn-outline-primary" for="tab-para-abate">Gados para abate <span class="badge bg-primary ms-1" id="badge-para-abate">0</span></label>
+
+      <input type="radio" class="btn-check" name="tabAbates" id="tab-abatidos" autocomplete="off">
+      <label class="btn btn-outline-secondary" for="tab-abatidos">Gados abatidos <span class="badge bg-secondary ms-1" id="badge-abates-count">0</span></label>
+    </div>
+  </div>
+</div>
+
+{# ── CARDS DE RESUMO ── #}
+<div class="row g-3 mb-3">
+  <div class="col-12 col-md-4">
+    <div class="abate-summary-card">
+      <div class="summary-icon red">
+        <i class="bi bi-scissors"></i>
+      </div>
+      <div>
+        <div class="summary-value" id="summary-total-abates">—</div>
+        <div class="summary-label">Total de abates</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="abate-summary-card">
+      <div class="summary-icon amber">
+        <i class="bi bi-speedometer2"></i>
+      </div>
+      <div>
+        <div class="summary-value" id="summary-peso-medio">—</div>
+        <div class="summary-label">Peso médio</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-4">
+    <div class="abate-summary-card">
+      <div class="summary-icon slate">
+        <i class="bi bi-droplet-fill"></i>
+      </div>
+      <div>
+        <div class="summary-value" id="summary-leite-total">—</div>
+        <div class="summary-label">Leite total (L/sem dos abatidos)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── FILTROS ── #}
+<div class="abates-filter-card">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-lg-4">
+      <div class="search-wrap">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="filtro-abate-q"
+               class="form-control form-control-sm"
+               placeholder="Buscar por código ">
+      </div>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <select id="filtro-abate-fazenda" class="form-select form-select-sm">
+        <option value="">Todas as fazendas</option>
+      </select>
+    </div>
+    <div class="col-12 col-sm-6 col-lg-3">
+      <select id="filtro-abate-condicao" class="form-select form-select-sm">
+        <option value="">Todas as condições</option>
+        <option value="IDADE_MAIOR_5">Idade maior que 5 anos</option>
+        <option value="LEITE_MENOR_40">Leite menor que 40 L/semana</option>
+        <option value="LEITE_RACAO_CRITICO">Leite < 70 L/semana e ração > 50 kg/dia</option>
+        <option value="ARROBA_MAIOR_18">Peso maior que 18 arrobas</option>
+      </select>
+    </div>
+    <div class="col-12 col-lg-2 d-flex align-items-end gap-2">
+      <button type="button" class="btn btn-sm btn-light flex-grow-1" id="btn-limpar-filtro-abate"
+              style="height:31px;">
+        <i class="bi bi-x-lg me-1"></i>Limpar
+      </button>
+    </div>
+  </div>
+
+  {# Ação em lote — exibida apenas quando na aba "Para Abate" #}
+  <div class="d-flex align-items-center justify-content-end mt-2" id="bulk-action-wrap">
+    <button type="button" class="btn btn-sm btn-danger" id="btn-bulk-abater" disabled>
+      <i class="bi bi-scissors me-1"></i>
+      Abater Selecionados (<span id="bulk-count">0</span>)
+    </button>
+  </div>
+</div>
+
+{# ── TABELA DE ABATES ── #}
+<div class="abates-table-wrap">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead id="abates-thead">
+        <tr>
+          <th><input type="checkbox" id="check-all-abates" class="form-check-input"></th>
+          <th>Código</th>
+          <th>Peso (kg)</th>
+          <th>Leite (L/sem)</th>
+          <th>Ração (kg/sem)</th>
+          <th>Nascimento</th>
+          <th>Fazenda</th>
+        </tr>
+      </thead>
+      <tbody id="abates-tbody">
+        <tr><td colspan="7" class="text-center text-muted py-5">
+          <span class="spinner-border spinner-border-sm me-2"></span>Carregando abates...
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    <button class="btn btn-sm btn-light" id="btn-prev">
+      <i class="bi bi-chevron-left"></i> Anterior
+    </button>
+
+    <span id="pagination-info" class="text-muted small">
+      Página 1 de 1
+    </span>
+
+    <button class="btn btn-sm btn-light" id="btn-next">
+      Próxima <i class="bi bi-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+{# ════ MODAL CANCELAR ABATE ════ #}
+<div class="modal fade" id="modalCancelarAbate" tabindex="-1" aria-labelledby="modalCancelarAbateTitle" aria-modal="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalCancelarAbateTitle">
+          <i class="bi bi-arrow-counterclockwise text-warning me-2"></i>Cancelar Abate
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">
+          Tem certeza que deseja <strong>cancelar o abate</strong> de
+          <strong id="cancelar-abate-gado-nome"></strong>?
+          O animal voltará a aparecer como <span class="text-success fw-semibold">ativo</span>.
+        </p>
+
+        {# Campo de novo código — exibido apenas se o código atual já está em uso #}
+        <div id="novo-codigo-wrap" style="display:none;" class="mb-2">
+          <label class="form-label">Novo código para o animal <span class="text-danger">*</span></label>
+          <input type="number" id="novo-codigo-input" class="form-control"
+                 placeholder="Informe um código único" min="1" step="1">
+        </div>
+
+        <div id="cancelar-abate-feedback" class="mt-2"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
+        <button type="button" class="btn btn-warning" id="btn-confirmar-cancelar-abate">
+          <i class="bi bi-arrow-counterclockwise me-1"></i>Confirmar cancelamento
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ════ MODAL DE CONFIRMAÇÃO GENÉRICO ════ #}
+{% include 'components/modal_confirm.html.twig' %}
+
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{{ asset('js/gados/abates.js') }}"></script>
+{% endblock %}
