@@ -59,7 +59,7 @@ A tela inicial (Dashboard) provê as seguintes métricas gerais baseadas em fun�
 
 *   **Linguagem:** PHP 8.4
 *   **Framework:** Symfony 8.0
-*   **Banco de Dados:** MySQL / MariaDB
+*   **Banco de Dados:** MySQL
 *   **ORM:** Doctrine ORM & Migrations
 *   **Dependências de Backend Extras:**
     *   `knplabs/knp-paginator-bundle` (Paginação Server-Side)
