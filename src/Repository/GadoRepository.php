@@ -124,6 +124,20 @@ class GadoRepository extends ServiceEntityRepository
         return (float) ($resultado ?? 0);
     }
 
+    /** @return Gado[] */
+    public function buscarUltimosPorUsuario(int $idUsuario, int $limite = 5): array
+    {
+        return $this->createQueryBuilder('g')
+            ->join('g.fazenda', 'f')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->setParameter('idUsuario', $idUsuario)
+            ->orderBy('g.id', 'DESC')
+            ->setMaxResults($limite)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function calcularLeitePerdidoAbatidosPorUsuario(int $idUsuario): float
     {
         $resultado = $this->createQueryBuilder('g')
