@@ -33,10 +33,6 @@ document.addEventListener('DOMContentLoaded', function () {
       atualizarNomeTopo(perfilCache.nome);
     }
 
-    if (perfilCache?.id !== undefined && perfilCache?.id !== null) {
-      localStorage.setItem('userId', String(perfilCache.id));
-    }
-
     return perfilCache;
   }
 
