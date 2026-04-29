@@ -55,13 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const userName = payload?.username || payload?.email || email;
         localStorage.setItem('userName', userName);
 
-        if (payload?.id !== undefined && payload?.id !== null) {
-          localStorage.setItem('userId', String(payload.id));
-        }
-
-        const userId = payload?.id ?? payload?.userId ?? null;
-        if (userId) localStorage.setItem('userId', String(userId));
-
         showFeedback('Login realizado! Redirecionando...', 'success');
         setTimeout(() => { window.location.href = '/dashboard'; }, 800);
       } else {

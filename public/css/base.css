@@ -233,12 +233,97 @@ body {
 @media (max-width: 576px) {
   .page-content { padding: .875rem; }
 
-  /* Font-size base ligeiramente menor */
   body { font-size: .875rem; }
 
-  /* Botões em bloco no mobile */
   .modal-footer .btn { min-height: 44px; }
 
-  /* Garantir que nada ultrapasse a viewport */
   img, table, .table-responsive { max-width: 100%; }
+}
+
+
+@media (max-width: 640px) {
+
+  .table-responsive-cards thead {
+    display: none;
+  }
+
+  /* Cada linha vira um card */
+  .table-responsive-cards tbody tr {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: .75rem;
+    padding: .65rem .85rem;
+    transition: box-shadow var(--transition);
+  }
+  .table-responsive-cards tbody tr:hover {
+    box-shadow: var(--shadow-md);
+    background: var(--surface);
+  }
+
+  .table-responsive-cards tbody td {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .3rem 0;
+    border: none;
+    font-size: .83rem;
+    line-height: 1.45;
+    visibility: visible !important;
+    display: flex !important;
+  }
+
+  .table-responsive-cards tbody td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: var(--muted);
+    min-width: 100px;
+    flex-shrink: 0;
+    padding-top: .1rem;
+  }
+
+  .table-responsive-cards tbody td.td-actions {
+    justify-content: flex-end;
+    padding-top: .55rem;
+    margin-top: .2rem;
+    border-top: 1px solid var(--border);
+  }
+  .table-responsive-cards tbody td.td-actions::before {
+    display: none;
+  }
+
+  .table-responsive-cards tbody td[colspan] {
+    display: block !important;
+    text-align: center;
+    padding: 2rem 1rem;
+    border: none;
+  }
+  .table-responsive-cards tbody td[colspan]::before {
+    display: none;
+  }
+
+  .table-responsive-cards tbody tr:has(td[colspan]) {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .table-responsive-cards .action-group {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .table-responsive-cards .td-fazendas-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem;
+  }
 }

@@ -7,7 +7,6 @@ window.AgroApp = (() => {
   const clearSession = () => {
     localStorage.removeItem('jwtToken');
     localStorage.removeItem('userName');
-    localStorage.removeItem('userId');
   };
 
  
@@ -23,26 +22,7 @@ window.AgroApp = (() => {
     }
   };
 
-  const getCurrentUserId = () => {
-    const stored = localStorage.getItem('userId');
-    if (stored) {
-      return stored;
-    }
 
-    const token = getToken();
-    if (!token) {
-      return null;
-    }
-
-    const payload = parseJwtPayload(token);
-    const id = payload?.id ?? payload?.userId ?? null;
-    if (id !== null) {
-      localStorage.setItem('userId', String(id));
-      return String(id);
-    }
-
-    return null;
-  };
 
   const escapeHtml = (value) => {
     return String(value ?? '')
@@ -259,7 +239,6 @@ window.AgroApp = (() => {
     fetchJson,
     formatDate,
     getCurrentUserName,
-    getCurrentUserId,
     getToken,
     setToken,
     clearSession,
