@@ -154,7 +154,7 @@ final class VeterinariosController extends AbstractController
             return $this->json(['message' => 'Veterinário criado'], 201);
         }
 
-        return $this->json(['error' => 'Erro ao criar'], 400);
+        return $this->json(['error' => 'CRMV Inválido'], 400);
     }
 
     #[Route('/api/veterinarios/{id}', methods: ['PUT'])]

@@ -408,7 +408,7 @@ final class GadosController extends AbstractController
             return $this->json(['message' => 'Gado criado'], 201);
         }
 
-        return $this->json(['error' => 'Erro ao criar'], 400);
+        return $this->json(['error' => 'Codigo Inválido'], 400);
     }
 
     #[Route('/api/gados/{id}', methods: ['PUT'])]

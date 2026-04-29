@@ -25,7 +25,7 @@ class VeterinarioDTO {
         maxMessage: 'CRMV muito longo'
     )]
     #[Assert\Regex(
-        pattern: "/^[A-Za-z0-9\-\/]+$/",
+        pattern: "/^CRMV-[A-Z]{2}\s\d{4,6}$/",
         message: "CRMV inválido"
     )]
     private ?string $crmv = null;
