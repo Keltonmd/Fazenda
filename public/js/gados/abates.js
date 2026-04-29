@@ -463,12 +463,14 @@ document.addEventListener('DOMContentLoaded', async function () {
       });
       bsModalCancelar?.hide();
       gadoParaCancelarId = null;
+      AgroApp.toast('Abate cancelado com sucesso. O animal voltou para a lista de gados vivos.', 'success');
       setLoading(true);
       await carregarDados();
     } catch (err) {
       if (cancelarFeedback) {
         cancelarFeedback.innerHTML = `<div class="alert alert-danger py-2">${AgroApp.escapeHtml(err.message)}</div>`;
       }
+      AgroApp.toast('Erro ao cancelar abate: ' + err.message, 'error');
     } finally {
       btnConfirmarCancelar.disabled = false;
     }

@@ -232,6 +232,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     try {
       if (isEdit) {
         await AgroApp.fetchJson(`/api/veterinarios/${id}`, { method: 'PUT', body: { nome, crmv } });
+        AgroApp.toast('Veterinário atualizado com sucesso.', 'success');
       } else {
         const idFazendaVal = document.getElementById('vetFazenda')?.value ?? '';
         const idFazenda = idFazendaVal ? Number(idFazendaVal) : null;
@@ -240,12 +241,14 @@ document.addEventListener('DOMContentLoaded', async function () {
           method: 'POST',
           body: { nome, crmv, idFazenda },
         });
+        AgroApp.toast('Veterinário cadastrado com sucesso.', 'success');
       }
 
       bsModalVet?.hide();
       await carregarVets();
     } catch (err) {
       setVetFeedback(err.message);
+      AgroApp.toast(err.message, 'error');
     }
   });
 
@@ -340,10 +343,12 @@ document.addEventListener('DOMContentLoaded', async function () {
       abrirModalFazendas(vetFazendasAtual);
       popularSelectAdicionar();
 
+      AgroApp.toast('Fazenda vinculada com sucesso.', 'success');
       setFazendasFeedback('Fazenda vinculada com sucesso.', 'success');
 
     } catch (err) {
       setFazendasFeedback(err.message);
+      AgroApp.toast('Erro ao vincular fazenda: ' + err.message, 'error');
     }
   });
 
@@ -361,12 +366,14 @@ document.addEventListener('DOMContentLoaded', async function () {
       await AgroApp.fetchJson(`/api/veterinarios/${vetFazendasAtual.id}/fazendas/${fazendaId}`, {
         method: 'DELETE',
       });
+      AgroApp.toast('Fazenda removida do veterinário com sucesso.', 'success');
       setFazendasFeedback('Fazenda removida com sucesso.', 'success');
       await carregarVets();
       abrirModalFazendas(vetFazendasAtual);
       popularSelectAdicionar();
     } catch (err) {
       setFazendasFeedback(err.message);
+      AgroApp.toast('Erro ao remover fazenda: ' + err.message, 'error');
     }
   }
 
