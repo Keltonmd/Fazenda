@@ -11,6 +11,8 @@
 
 AgroPanel é uma aplicação web desenvolvida em **PHP 8.4** e **Symfony 8.0** para o controle e gestão de uma fazenda de bovinos. Este projeto foi desenvolvido como um teste prático.
 
+**O sistema pode ser acessado online pelo seguinte link:** [https://agropanel.ddns.net](https://agropanel.ddns.net)
+
 ## 📑 Sumário
 
 * [Requisitos e Funcionalidades](#-requisitos-e-funcionalidades)
@@ -77,25 +79,39 @@ A aplicação e seus serviços dependentes rodam dentro do ambiente Docker, prop
     cd Fazenda
     ```
 
-2.  **Inicie os containers da aplicação:**
+2. Configure a autenticação JWT
+    Crie o arquivo .env.local na raiz do projeto:
+    ```bash
+    nano .env.local
+    ```
+    Você pode gerar uma senha aleatória pelo terminal:
+    ```bash
+    openssl rand -hex 32
+    ```
+
+    Adicione no arquivo:
+    ```bash
+    JWT_PASSPHRASE=sua_senha_segura
+    ```
+
+3.  **Inicie os containers da aplicação:**
     A imagem configurada construirá o ambiente PHP, instalará o Composer, e de forma autônoma aguardará o banco de dados ficar saudável para aplicar as migrações:
     ```bash
     docker compose up -d --build
     ```
 
-3.  **Gere as chaves de autenticação JWT:**
+4.  **Gere as chaves de autenticação JWT:**
     O projeto utiliza autenticação via JWT. Para que funcione corretamente, é necessário gerar o par de chaves (pública/privada) e a *passphrase*. Execute o comando abaixo no terminal da sua máquina (que acessará o container PHP):
     ```bash
-    docker compose exec php php bin/console lexik:jwt:generate-keypair
+    docker compose exec app php bin/console lexik:jwt:generate-keypair
     ```
     *Obs: O comando irá criar as chaves dentro do diretório `config/jwt` do container.*
 
-4.  **Acesse a aplicação no navegador:**
+5.  **Acesse a aplicação no navegador:**
     A aplicação estará pronta para ser acessada na porta padrão:
     ```
     http://localhost:8000
     ```
-    (Ou porta compatível que tenha sido exportada em seu docker-compose.yml)
 
 ## 📂 Visão Geral da Arquitetura do Frontend
 
