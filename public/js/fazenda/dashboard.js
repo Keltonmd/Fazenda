@@ -98,7 +98,9 @@ document.addEventListener('DOMContentLoaded', async function () {
         <td>${e(g.leite)} L/sem</td>
         <td>${AgroApp.formatDate(g.nascimento)}</td>
         <td>
-          <span class="badge-status badge-ativo">Ativo</span>
+          <span class="badge-status ${g.abatido ? 'badge-abatido' : 'badge-ativo'}">
+            ${g.abatido ? 'Abatido' : 'Ativo'}
+          </span>
         </td>
       </tr>`).join('');
   }
