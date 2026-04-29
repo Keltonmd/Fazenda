@@ -109,10 +109,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
       return `
         <tr>
-          <td class="fw-semibold">${e(v.nome)}</td>
-          <td class="crmv-text d-none d-sm-table-cell">${e(v.crmv)}</td>
-          <td class="d-none d-md-table-cell">
-            <div class="d-flex flex-wrap align-items-center gap-1">
+          <td data-label="Nome" class="fw-semibold">${e(v.nome)}</td>
+          <td data-label="CRMV" class="crmv-text">${e(v.crmv)}</td>
+          <td data-label="Fazendas">
+            <div class="td-fazendas-content">
               ${resumoFazendas}
               <button class="btn btn-xs btn-outline-success btn-ger-fazendas-vet"
                       data-id="${e(v.id)}"
@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async function () {
               </button>
             </div>
           </td>
-          <td class="text-end">
+          <td class="text-end td-actions">
             <div class="action-group">
               <button class="btn-action btn-action-edit btn-editar-vet" title="Editar"
                       data-id="${e(v.id)}"

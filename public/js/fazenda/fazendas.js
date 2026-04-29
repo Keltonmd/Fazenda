@@ -68,10 +68,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     tbody.innerHTML = lista.map(f => `
       <tr>
-        <td class="fw-semibold">${e(f.nome)}</td>
-        <td class="d-none d-sm-table-cell">${e(f.responsavel)}</td>
-        <td class="d-none d-md-table-cell">${e(f.tamanhoHA)} ha</td>
-        <td class="text-end">
+        <td data-label="Nome" class="fw-semibold">${e(f.nome)}</td>
+        <td data-label="Responsável">${e(f.responsavel)}</td>
+        <td data-label="Área (ha)">${e(f.tamanhoHA)} ha</td>
+        <td class="text-end td-actions">
           <div class="action-group">
             <button class="btn-action btn-action-edit btn-editar-fazenda"
                     title="Editar fazenda"

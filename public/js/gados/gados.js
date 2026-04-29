@@ -100,12 +100,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     const e = AgroApp.escapeHtml;
     tbody.innerHTML = lista.map(g => `
       <tr>
-        <td>${e(g.codigo ?? '—')}</td>
-        <td class="fw-semibold">${e(g.peso)}</td>
-        <td class="d-none d-md-table-cell">${e(g.leite)}</td>
-        <td class="d-none d-md-table-cell">${e(g.racao)}</td>
-        <td class="d-none d-sm-table-cell">${AgroApp.formatDate(g.nascimento)}</td>
-        <td class="text-end">
+        <td data-label="Código">${e(g.codigo ?? '—')}</td>
+        <td data-label="Peso (kg)" class="fw-semibold">${e(g.peso)}</td>
+        <td data-label="Leite (L/sem)" class="d-none d-md-table-cell">${e(g.leite)}</td>
+        <td data-label="Ração (kg/sem)" class="d-none d-md-table-cell">${e(g.racao)}</td>
+        <td data-label="Nascimento" class="d-none d-sm-table-cell">${AgroApp.formatDate(g.nascimento)}</td>
+        <td class="text-end td-actions">
           <div class="action-group">
             <button class="btn-action btn-action-edit btn-editar-gado" title="Editar"
                     data-id="${e(g.id)}"
