@@ -186,7 +186,7 @@ final class FazendaController extends AbstractController
             return $this->json(['message' => 'Fazenda criada'], 201);
         }
 
-        return $this->json(['error' => 'Erro ao criar'], 400);
+        return $this->json(['error' => 'Nome inválido'], 400);
     }
 
     #[Route('/api/fazendas/{id}', methods: ['PUT'])]
