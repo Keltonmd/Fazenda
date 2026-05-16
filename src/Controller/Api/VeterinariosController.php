@@ -3,33 +3,36 @@
 namespace App\Controller\Api;
 
 use App\Dto\VeterinarioDTO;
-use App\Entity\Usuario;
+use App\Entity\Fazenda;
+use App\Entity\Veterinario;
+use App\Form\VeterinarioType;
+use App\Service\FazendaService;
 use App\Service\VeterinarioService;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class VeterinariosController extends AbstractController
 {
-    private VeterinarioService $veterinarioService;
+    use HandlesJsonFormRequestsTrait;
 
-    public function __construct(VeterinarioService $veterinarioService)
+    private VeterinarioService $veterinarioService;
+    private FazendaService $fazendaService;
+
+    public function __construct(VeterinarioService $veterinarioService, FazendaService $fazendaService)
     {
         $this->veterinarioService = $veterinarioService;
+        $this->fazendaService = $fazendaService;
     }
 
     #[Route('/api/veterinarios', methods: ['GET'])]
-    public function listar(Request $request, PaginatorInterface $paginator): Response
-    {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function listar(Request $request, PaginatorInterface $paginator): Response {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $pagination = $this->veterinarioService
             ->listarTodosVeterinariosPaginado($usuario->getId(), $request, $paginator);
@@ -62,12 +65,7 @@ final class VeterinariosController extends AbstractController
     #[Route('/api/veterinarios/contagem', methods: ['GET'])]
     public function contagem(): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         return $this->json([
             'quantidadeVeterinarios' => $this->veterinarioService->contVeterinarios($usuario->getId()),
@@ -76,12 +74,7 @@ final class VeterinariosController extends AbstractController
 
     #[Route('/api/veterinarios/ultimos-cadastros', methods: ['GET'])]
     public function ultimosCadastros(): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         $dados = [];
 
@@ -100,98 +93,61 @@ final class VeterinariosController extends AbstractController
     }
 
     #[Route('/api/veterinarios', methods: ['POST'])]
-    public function cadastrar(Request $request, ValidatorInterface $validator): Response
+    public function cadastrar(Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['nome'], $data['crmv'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para cadastrar o veterinário.'], 400);
         }
 
         $dto = new VeterinarioDTO();
+        $form = $this->createJsonVeterinarioForm($dto, $usuario->getId());
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
 
         try {
-            $dto->setNome($data['nome']);
-            $dto->setCrmv($data['crmv']);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->veterinarioService->inserir($dto, $usuario->getId());
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-        
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $idFazenda = $data['idFazenda'] ?? null;
-
-        if ($idFazenda !== null) {
-            $idFazendaValidado = filter_var($idFazenda, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-
-            if ($idFazendaValidado === false) {
-                return $this->json(['error' => 'Fazenda inválida'], 400);
-            }
-
-            $idFazenda = $idFazendaValidado;
-        }
-
-        $resultado = $this->veterinarioService->inserir(
-            $dto,
-            $usuario->getId(),
-            $idFazenda
-        );
 
         if ($resultado) {
             return $this->json(['message' => 'Veterinário criado'], 201);
         }
 
-        return $this->json(['error' => 'CRMV Inválido'], 400);
+        return $this->json(['error' => 'Não foi possível criar o veterinário.'], 400);
     }
 
     #[Route('/api/veterinarios/{id}', methods: ['PUT'])]
-    public function atualizar(int $id, Request $request, ValidatorInterface $validator): Response
+    public function atualizar(Veterinario $veterinario, Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['nome'], $data['crmv'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para atualizar o veterinário.'], 400);
         }
 
         $dto = new VeterinarioDTO();
+        $form = $this->createJsonVeterinarioForm($dto, $usuario->getId());
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
+
+        $dto->setId($veterinario->getId());
 
         try {
-            $dto->setId($id);
-            $dto->setNome($data['nome']);
-            $dto->setCrmv($data['crmv']);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->veterinarioService->alterar($dto, $usuario->getId());
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->veterinarioService->alterar($dto, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Atualizado com sucesso']);
@@ -201,16 +157,9 @@ final class VeterinariosController extends AbstractController
     }
 
     #[Route('/api/veterinarios/{id}', methods: ['DELETE'])]
-    public function deletar(int $id): Response
-    {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $resultado = $this->veterinarioService->excluir($id, $usuario->getId());
+    public function deletar(Veterinario $veterinario): Response {
+        $usuario = $this->getAuthenticatedUsuario();
+        $resultado = $this->veterinarioService->excluir($veterinario, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Removido com sucesso']);
@@ -219,21 +168,10 @@ final class VeterinariosController extends AbstractController
         return $this->json(['error' => 'Erro ao deletar'], 400);
     }
 
-    #[Route('/api/veterinarios/{id}/fazendas/{fazendaId}', methods: ['POST'])]
-    public function adicionarFazenda(int $id, int $fazendaId): Response
-    {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $resultado = $this->veterinarioService->adicionarFazenda(
-            $id,
-            $fazendaId,
-            $usuario->getId()
-        );
+    #[Route('/api/veterinarios/{veterinario}/fazendas/{fazenda}', methods: ['POST'])]
+    public function adicionarFazenda(Veterinario $veterinario, Fazenda $fazenda): Response {
+        $usuario = $this->getAuthenticatedUsuario();
+        $resultado = $this->veterinarioService->adicionarFazenda($veterinario, $fazenda, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Fazenda vinculada']);
@@ -242,26 +180,24 @@ final class VeterinariosController extends AbstractController
         return $this->json(['error' => 'Erro ao vincular'], 400);
     }
 
-    #[Route('/api/veterinarios/{id}/fazendas/{fazendaId}', methods: ['DELETE'])]
-    public function removerFazenda(int $id, int $fazendaId): Response
+    #[Route('/api/veterinarios/{veterinario}/fazendas/{fazenda}', methods: ['DELETE'])]
+    public function removerFazenda(Veterinario $veterinario, Fazenda $fazenda): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $resultado = $this->veterinarioService->removerFazenda(
-            $id,
-            $fazendaId,
-            $usuario->getId()
-        );
+        $usuario = $this->getAuthenticatedUsuario();
+        $resultado = $this->veterinarioService->removerFazenda($veterinario, $fazenda, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Fazenda removida']);
         }
 
         return $this->json(['error' => 'Erro ao remover'], 400);
+    }
+
+    private function createJsonVeterinarioForm(VeterinarioDTO $dto, int $idUsuario): FormInterface
+    {
+        return $this->createForm(VeterinarioType::class, $dto, [
+            'csrf_protection' => false,
+            'fazendas_choices' => $this->fazendaService->listarEntidades($idUsuario),
+        ]);
     }
 }

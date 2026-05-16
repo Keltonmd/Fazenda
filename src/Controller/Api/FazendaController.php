@@ -3,33 +3,36 @@
 namespace App\Controller\Api;
 
 use App\Dto\FazendaDTO;
-use App\Entity\Usuario;
+use App\Entity\Fazenda;
+use App\Form\FazendaType;
 use App\Service\FazendaService;
+use App\Service\VeterinarioService;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class FazendaController extends AbstractController
 {
-    private FazendaService $fazendaService;
+    use HandlesJsonFormRequestsTrait;
 
-    public function __construct(FazendaService $fazendaService)
+    private FazendaService $fazendaService;
+    private VeterinarioService $veterinarioService;
+
+    public function __construct(FazendaService $fazendaService, VeterinarioService $veterinarioService)
     {
         $this->fazendaService = $fazendaService;
+        $this->veterinarioService = $veterinarioService;
     }
 
     #[Route('/api/fazendas', methods: ['GET'])]
     public function listar(Request $request, PaginatorInterface $paginator): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         $pagination = $this->fazendaService->listarTodosPaginado($usuario->getId(), $request, $paginator);
 
@@ -61,12 +64,7 @@ final class FazendaController extends AbstractController
     #[Route('/api/fazendas/contagem', methods: ['GET'])]
     public function contagem(): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         return $this->json([
             'quantidadeFazendas' => $this->fazendaService->contFazendas($usuario->getId()),
@@ -75,12 +73,7 @@ final class FazendaController extends AbstractController
 
     #[Route('/api/fazendas/ultimos-cadastros', methods: ['GET'])]
     public function ultimosCadastros(): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         $dados = [];
 
@@ -101,12 +94,7 @@ final class FazendaController extends AbstractController
     #[Route('/api/fazendas/opcoes', methods: ['GET'])]
     public function opcoes(): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         $dados = [];
 
@@ -123,16 +111,10 @@ final class FazendaController extends AbstractController
     }
 
     #[Route('/api/fazendas/{id}', methods: ['GET'])]
-    public function buscar(int $id): Response
+    public function buscar(Fazenda $fazenda): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $fazenda = $this->fazendaService->buscarPorId($id, $usuario->getId());
+        $usuario = $this->getAuthenticatedUsuario();
+        $fazenda = $this->fazendaService->buscarPorId($fazenda, $usuario->getId());
 
         if (!$fazenda) {
             return $this->json(['error' => 'Fazenda não encontrada'], 404);
@@ -147,84 +129,61 @@ final class FazendaController extends AbstractController
     }
 
     #[Route('/api/fazendas', methods: ['POST'])]
-    public function cadastrar(Request $request, ValidatorInterface $validator): Response
+    public function cadastrar(Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['nome'], $data['responsavel'], $data['tamanhoHA'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para cadastrar a fazenda.'], 400);
         }
 
         $dto = new FazendaDTO();
+        $form = $this->createJsonFazendaForm($dto, $usuario->getId());
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
 
         try {
-            $dto->setNome($data['nome']);
-            $dto->setResponsavel($data['responsavel']);
-            $dto->setTamanhoHA($data['tamanhoHA']);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->fazendaService->inserir($dto, $usuario->getId());
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->fazendaService->inserir($dto, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Fazenda criada'], 201);
         }
 
-        return $this->json(['error' => 'Nome inválido'], 400);
+        return $this->json(['error' => 'Não foi possível criar a fazenda.'], 400);
     }
 
     #[Route('/api/fazendas/{id}', methods: ['PUT'])]
-    public function atualizar(int $id, Request $request, ValidatorInterface $validator): Response
+    public function atualizar(Fazenda $fazenda, Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['nome'], $data['responsavel'], $data['tamanhoHA'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para atualizar a fazenda.'], 400);
         }
 
         $dto = new FazendaDTO();
+        $form = $this->createJsonFazendaForm($dto, $usuario->getId());
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
+
+        $dto->setId($fazenda->getId());
 
         try {
-            $dto->setId($id);
-            $dto->setNome($data['nome']);
-            $dto->setResponsavel($data['responsavel']);
-            $dto->setTamanhoHA($data['tamanhoHA']);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->fazendaService->alterar($dto, $usuario->getId());
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->fazendaService->alterar($dto, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Atualizada']);
@@ -234,21 +193,23 @@ final class FazendaController extends AbstractController
     }
 
     #[Route('/api/fazendas/{id}', methods: ['DELETE'])]
-    public function deletar(int $id): Response
+    public function deletar(Fazenda $fazenda): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $resultado = $this->fazendaService->excluir($id, $usuario->getId());
+        $usuario = $this->getAuthenticatedUsuario();
+        $resultado = $this->fazendaService->excluir($fazenda, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Removida']);
         }
 
         return $this->json(['error' => 'Erro ao deletar'], 400);
+    }
+
+    private function createJsonFazendaForm(FazendaDTO $dto, int $idUsuario): FormInterface
+    {
+        return $this->createForm(FazendaType::class, $dto, [
+            'csrf_protection' => false,
+            'veterinarios_choices' => $this->veterinarioService->listarEntidades($idUsuario),
+        ]);
     }
 }
