@@ -3,7 +3,7 @@
 namespace App\Controller\Api;
 
 use App\Dto\UsuarioDTO;
-use App\Entity\Usuario;
+use App\Form\UsuarioType;
 use App\Service\UsuarioService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -11,10 +11,12 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 final class UsuarioController extends AbstractController
 {
+    use HandlesJsonFormRequestsTrait;
+
     private UsuarioService $usuarioService;
 
     #[Autowire(service: 'limiter.cadastro')]
@@ -27,14 +29,10 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/api/usuario', methods: ['GET'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function perfil(): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         return $this->json([
             'id' => $usuario->getId(),
@@ -44,7 +42,7 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/api/usuario', methods: ['POST'])]
-    public function cadastrar(Request $request, ValidatorInterface $validator): Response
+    public function cadastrar(Request $request): Response
     {
         $ip = $request->getClientIp();
 
@@ -57,31 +55,27 @@ final class UsuarioController extends AbstractController
             ], 429);
         }
     
-        $data = json_decode($request->getContent(), true);
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$data || !isset($data['nome'], $data['email'], $data['password'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para cadastrar o usuário.'], 400);
         }
 
         $dto = new UsuarioDTO();
+        $form = $this->createForm(UsuarioType::class, $dto, [
+            'csrf_protection' => false,
+        ]);
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
 
         try {
-            $dto->setNome($data['nome']);
-            $dto->setEmail($data['email']);
-            $dto->setPassword($data['password']);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->usuarioService->inserir($dto);
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->usuarioService->inserir($dto);
 
         if ($resultado) {
             return $this->json(['message' => 'Usuário criado'], 201);
@@ -91,40 +85,34 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/api/usuario', methods: ['PUT'])]
-    public function atualizar(Request $request, ValidatorInterface $validator): Response
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function atualizar(Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['nome'], $data['email'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para atualizar o usuário.'], 400);
         }
 
         $dto = new UsuarioDTO();
+        $form = $this->createForm(UsuarioType::class, $dto, [
+            'csrf_protection' => false,
+            'include_password' => false,
+        ]);
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
+
+        $dto->setId($usuario->getId());
 
         try {
-            $dto->setId($usuario->getId());
-            $dto->setNome($data['nome']);
-            $dto->setEmail($data['email']);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->usuarioService->alterar($dto);
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->usuarioService->alterar($dto);
 
         if ($resultado) {
             return $this->json(['message' => 'Usuário atualizado']);
@@ -134,14 +122,10 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/api/usuario', methods: ['DELETE'])]
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
     public function deletar(): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         $resultado = $this->usuarioService->excluir($usuario->getId());
 
@@ -153,36 +137,32 @@ final class UsuarioController extends AbstractController
     }
 
     #[Route('/api/usuario/password', methods: ['PUT'])]
-    public function atualizarPassword(Request $request, ValidatorInterface $validator): Response
+    #[IsGranted('IS_AUTHENTICATED_FULLY')]
+    public function atualizarPassword(Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para atualizar a senha.'], 400);
         }
 
-        $data = json_decode($request->getContent(), true);
+        $dto = new UsuarioDTO();
+        $form = $this->createForm(UsuarioType::class, $dto, [
+            'csrf_protection' => false,
+            'include_nome' => false,
+            'include_email' => false,
+            'password_require_complexity' => false,
+        ]);
+        $form->submit($data);
 
-        if (!$data || !isset($data['password'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
-        }
-
-        if (!is_string($data['password'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
-        }
-
-        $errors = $validator->validatePropertyValue(UsuarioDTO::class, 'password', $data['password']);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
         }
 
         $resultado = $this->usuarioService->alterarPassword(
             $usuario->getId(),
-            $data['password']
+            $dto->getPassword()
         );
 
         if ($resultado) {

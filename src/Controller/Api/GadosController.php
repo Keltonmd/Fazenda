@@ -3,32 +3,36 @@
 namespace App\Controller\Api;
 
 use App\Dto\GadoDTO;
-use App\Entity\Usuario;
+use App\Entity\Gado;
+use App\Form\GadoType;
+use App\Service\FazendaService;
 use App\Service\GadoService;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class GadosController extends AbstractController
 {
-    private GadoService $gadoService;
+    use HandlesJsonFormRequestsTrait;
 
-    public function __construct(GadoService $gadoService)
+    private GadoService $gadoService;
+    private FazendaService $fazendaService;
+
+    public function __construct(GadoService $gadoService, FazendaService $fazendaService)
     {
         $this->gadoService = $gadoService;
+        $this->fazendaService = $fazendaService;
     }
 
     #[Route('/api/gados', methods: ['GET'])]
-    public function listar(Request $request, PaginatorInterface $paginator): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function listar(Request $request, PaginatorInterface $paginator): Response
+    {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $pagination = $this->gadoService->listarTodosPorUsuarioPaginado($usuario->getId(), $request, $paginator);
 
@@ -50,14 +54,14 @@ final class GadosController extends AbstractController
             ];
         }
 
-         return $this->json([
+        return $this->json([
             'data' => $dados,
             'pagination' => [
                 'currentPage' => $pagination->getCurrentPageNumber(),
-                'totalPages' => max( 
-                        1,
-                        ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
-                    ),
+                'totalPages' => max(
+                    1,
+                    ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
+                ),
                 'totalItems' => $pagination->getTotalItemCount(),
                 'itemsPerPage' => $pagination->getItemNumberPerPage(),
             ]
@@ -65,13 +69,9 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/gados/abate', methods: ['GET'])]
-    public function listarParaAbate(Request $request, PaginatorInterface $paginator): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function listarParaAbate(Request $request, PaginatorInterface $paginator): Response
+    {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $pagination = $this->gadoService->listarGadosParaAbatePaginado($usuario->getId(), $request, $paginator);
 
@@ -97,10 +97,10 @@ final class GadosController extends AbstractController
             'data' => $dados,
             'pagination' => [
                 'currentPage' => $pagination->getCurrentPageNumber(),
-                'totalPages' => max( 
-                        1,
-                        ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
-                    ),
+                'totalPages' => max(
+                    1,
+                    ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
+                ),
                 'totalItems' => $pagination->getTotalItemCount(),
                 'itemsPerPage' => $pagination->getItemNumberPerPage(),
             ]
@@ -108,13 +108,9 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/gados/abatidos', methods: ['GET'])]
-    public function listarAbatidos(Request $request, PaginatorInterface $paginator): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function listarAbatidos(Request $request, PaginatorInterface $paginator): Response
+    {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $pagination = $this->gadoService->listarGadosAbatidosPaginado($usuario->getId(), $request, $paginator);
 
@@ -140,10 +136,10 @@ final class GadosController extends AbstractController
             'data' => $dados,
             'pagination' => [
                 'currentPage' => $pagination->getCurrentPageNumber(),
-                'totalPages' => max( 
-                        1,
-                        ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
-                    ),
+                'totalPages' => max(
+                    1,
+                    ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
+                ),
                 'totalItems' => $pagination->getTotalItemCount(),
                 'itemsPerPage' => $pagination->getItemNumberPerPage(),
             ]
@@ -151,13 +147,9 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/gados/vivos', methods: ['GET'])]
-    public function listarVivos(Request $request, PaginatorInterface $paginator): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function listarVivos(Request $request, PaginatorInterface $paginator): Response
+    {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $pagination = $this->gadoService->listarGadosVivosPaginado($usuario->getId(), $request, $paginator);
 
@@ -183,10 +175,10 @@ final class GadosController extends AbstractController
             'data' => $dados,
             'pagination' => [
                 'currentPage' => $pagination->getCurrentPageNumber(),
-                'totalPages' => max( 
-                        1,
-                        ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
-                    ),
+                'totalPages' => max(
+                    1,
+                    ceil($pagination->getTotalItemCount() / $pagination->getItemNumberPerPage())
+                ),
                 'totalItems' => $pagination->getTotalItemCount(),
                 'itemsPerPage' => $pagination->getItemNumberPerPage(),
             ]
@@ -194,13 +186,9 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/gados/resumo', methods: ['GET'])]
-    public function resumo(): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function resumo(): Response
+    {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $contagem = $this->gadoService->contGados($usuario->getId());
 
@@ -216,24 +204,15 @@ final class GadosController extends AbstractController
     #[Route('/api/gados/abates/resumo', methods: ['GET'])]
     public function resumoAbates(): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         return $this->json($this->gadoService->resumoAbates($usuario->getId()));
     }
 
     #[Route('/api/gados/ultimos-cadastros', methods: ['GET'])]
-    public function ultimosCadastros(): Response {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+    public function ultimosCadastros(): Response
+    {
+        $usuario = $this->getAuthenticatedUsuario();
 
         $dados = [];
 
@@ -261,12 +240,7 @@ final class GadosController extends AbstractController
     #[Route('/api/gados/codigo-existe/{codigo}', methods: ['GET'])]
     public function verificarCodigo(int $codigo): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
+        $usuario = $this->getAuthenticatedUsuario();
 
         if ($codigo <= 0) {
             return $this->json(['error' => 'Código inválido'], 400);
@@ -278,16 +252,10 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/gados/{id}/abate/cancelar', methods: ['PUT'])]
-    public function cancelarAbate(int $id, Request $request): Response
+    public function cancelarAbate(Gado $gado, Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request) ?? [];
         $novoCodigo = $data['novoCodigo'] ?? null;
 
         if ($novoCodigo !== null) {
@@ -301,7 +269,7 @@ final class GadosController extends AbstractController
         }
 
         try {
-            $resultado = $this->gadoService->cancelarAbate($id, $usuario->getId(), $novoCodigo);
+            $resultado = $this->gadoService->cancelarAbate($gado, $usuario->getId(), $novoCodigo);
         } catch (\Exception $e) {
             return $this->json(['error' => $e->getMessage()], 400);
         }
@@ -316,17 +284,11 @@ final class GadosController extends AbstractController
     #[Route('/api/gados/abate', methods: ['PUT'])]
     public function mandarParaAbate(Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $data = json_decode($request->getContent(), true);
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
         if (!$data || !isset($data['gados']) || !is_array($data['gados'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            return $this->json(['error' => 'Envie uma lista válida de gados para abate.'], 400);
         }
 
         $idsGado = [];
@@ -335,7 +297,7 @@ final class GadosController extends AbstractController
             $idGadoValidado = filter_var($idGado, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
 
             if ($idGadoValidado === false) {
-                return $this->json(['error' => 'Dados inválidos'], 400);
+                return $this->json(['error' => 'A lista de gados contém um ou mais IDs inválidos.'], 400);
             }
 
             $idsGado[] = $idGadoValidado;
@@ -343,10 +305,14 @@ final class GadosController extends AbstractController
 
         $idsGado = array_values(array_unique($idsGado));
 
-        $resultado = $this->gadoService->mandarParaAbate(
-            $idsGado,
-            $usuario->getId()
-        );
+        try {
+            $resultado = $this->gadoService->mandarParaAbate(
+                $idsGado,
+                $usuario->getId()
+            );
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
+        }
 
         if ($resultado) {
             return $this->json(['message' => 'Gados abatidos']);
@@ -356,109 +322,63 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/fazendas/{fazendaId}/gados', methods: ['POST'])]
-    public function cadastrar(int $fazendaId, Request $request, ValidatorInterface $validator): Response
+    public function cadastrar(int $fazendaId, Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para cadastrar o gado.'], 400);
         }
 
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['codigo'], $data['leite'], $data['racao'], $data['peso'], $data['nascimento'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
-        }
-
-        if (!is_string($data['nascimento'])) {
-            return $this->json(['error' => 'Data inválida'], 400);
-        }
-
-        try {
-            $nascimento = new \DateTimeImmutable($data['nascimento']);
-        } catch (\Throwable $e) {
-            return $this->json(['error' => 'Data inválida'], 400);
-        }
-
+        $data['fazendaId'] = $fazendaId;
         $dto = new GadoDTO();
+        $form = $this->createJsonGadoForm($dto, $usuario->getId());
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
 
         try {
-            $dto->setCodigo($data['codigo']);
-            $dto->setLeite($data['leite']);
-            $dto->setRacao($data['racao']);
-            $dto->setPeso($data['peso']);
-            $dto->setNascimento($nascimento);
-            $dto->setFazendaId($fazendaId);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->gadoService->inserir($dto, $usuario->getId());
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->gadoService->inserir($dto, $fazendaId, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Gado criado'], 201);
         }
 
-        return $this->json(['error' => 'Codigo Inválido'], 400);
+        return $this->json(['error' => 'Não foi possível criar o gado.'], 400);
     }
 
     #[Route('/api/gados/{id}', methods: ['PUT'])]
-    public function atualizar(int $id, Request $request, ValidatorInterface $validator): Response
+    public function atualizar(Gado $gado, Request $request): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
+        $usuario = $this->getAuthenticatedUsuario();
+        $data = $this->decodeJsonPayload($request);
 
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
+        if ($data === null) {
+            return $this->json(['error' => 'Envie um JSON válido para atualizar o gado.'], 400);
         }
 
-        $data = json_decode($request->getContent(), true);
-
-        if (!$data || !isset($data['codigo'], $data['leite'], $data['racao'], $data['peso'], $data['nascimento'])) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
-        }
-
-        if (!is_string($data['nascimento'])) {
-            return $this->json(['error' => 'Data inválida'], 400);
-        }
-
-        try {
-            $nascimento = new \DateTimeImmutable($data['nascimento']);
-        } catch (\Throwable $e) {
-            return $this->json(['error' => 'Data inválida'], 400);
-        }
-
+        $data['fazendaId'] ??= $gado->getFazenda()?->getId();
         $dto = new GadoDTO();
+        $form = $this->createJsonGadoForm($dto, $usuario->getId());
+        $form->submit($data);
+
+        if (!$form->isValid()) {
+            return $this->buildFormErrorResponse($form);
+        }
+
+        $dto->setId($gado->getId());
 
         try {
-            $dto->setId($id);
-            $dto->setCodigo($data['codigo']);
-            $dto->setLeite($data['leite']);
-            $dto->setRacao($data['racao']);
-            $dto->setPeso($data['peso']);
-            $dto->setNascimento($nascimento);
-        } catch (\TypeError $e) {
-            return $this->json(['error' => 'Dados inválidos'], 400);
+            $resultado = $this->gadoService->alterar($dto, $usuario->getId());
+        } catch (\DomainException $e) {
+            return $this->json(['error' => $e->getMessage()], 400);
         }
-
-        $errors = $validator->validate($dto);
-
-        if (count($errors) > 0) {
-            return $this->json([
-                'errors' => (string) $errors
-            ], 400);
-        }
-
-        $resultado = $this->gadoService->alterar($dto, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Atualizado']);
@@ -468,21 +388,23 @@ final class GadosController extends AbstractController
     }
 
     #[Route('/api/gados/{id}', methods: ['DELETE'])]
-    public function deletar(int $id): Response
+    public function deletar(Gado $gado): Response
     {
-        /** @var Usuario $usuario */
-        $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->json(['error' => 'Não autenticado'], 401);
-        }
-
-        $resultado = $this->gadoService->excluir($id, $usuario->getId());
+        $usuario = $this->getAuthenticatedUsuario();
+        $resultado = $this->gadoService->excluir($gado, $usuario->getId());
 
         if ($resultado) {
             return $this->json(['message' => 'Removido']);
         }
 
         return $this->json(['error' => 'Erro ao deletar'], 400);
+    }
+
+    private function createJsonGadoForm(GadoDTO $dto, int $idUsuario): FormInterface
+    {
+        return $this->createForm(GadoType::class, $dto, [
+            'csrf_protection' => false,
+            'fazendas_choices' => $this->fazendaService->listarEntidades($idUsuario),
+        ]);
     }
 }

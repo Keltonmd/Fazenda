@@ -6,6 +6,7 @@ use App\Repository\FazendaRepository;
 use App\Dto\FazendaDTO;
 use App\Entity\Fazenda;
 use App\Repository\UsuarioRepository;
+use App\Repository\VeterinarioRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,13 +14,15 @@ use Symfony\Component\HttpFoundation\Request;
 class FazendaService {
     private FazendaRepository $fazendaRepository;
     private UsuarioRepository $usuarioRepository;
+    private VeterinarioRepository $veterinarioRepository;
     private EntityManagerInterface $entityManager;
 
-    public function __construct(FazendaRepository $fazendaRepository, EntityManagerInterface $entityManager, UsuarioRepository $usuarioRepository)
+    public function __construct(FazendaRepository $fazendaRepository, EntityManagerInterface $entityManager, UsuarioRepository $usuarioRepository, VeterinarioRepository $veterinarioRepository)
     {
        $this->fazendaRepository = $fazendaRepository;
        $this->entityManager = $entityManager;
        $this->usuarioRepository = $usuarioRepository;
+       $this->veterinarioRepository = $veterinarioRepository;
     }
 
     public function listarTodosPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator) {
@@ -41,10 +44,8 @@ class FazendaService {
         return $pagination;
     }
 
-    public function buscarPorId(int $idFazenda, int $idUsuario): ?FazendaDTO
+    public function buscarPorId(Fazenda $fazendaEntity, int $idUsuario): ?FazendaDTO
     {
-        $fazendaEntity = $this->fazendaRepository->find($idFazenda);
-
         if (!$fazendaEntity || !$this->fazendaPertenceAoUsuario($fazendaEntity, $idUsuario)) {
             return null;
         }
@@ -60,13 +61,16 @@ class FazendaService {
         }
 
         if ($this->fazendaRepository->existePorUsuarioENome($idUsuario, $fazendaDTO->getNome())) {
-            return false;
+            throw new \DomainException('Já existe uma fazenda com esse nome.');
         }
 
         $fazendaEntity = new Fazenda();
 
         if ($this->mapDtoParaEntity($fazendaDTO, $fazendaEntity)) {
             $fazendaEntity->setUsuario($usuario);
+            if (!$this->sincronizarVeterinarios($fazendaEntity, $idUsuario, $fazendaDTO->getVeterinariosIds())) {
+                throw new \DomainException('Um ou mais veterinários selecionados são inválidos.');
+            }
             $this->entityManager->persist($fazendaEntity);
             $this->entityManager->flush();
             return true;
@@ -88,10 +92,13 @@ class FazendaService {
             strcasecmp($fazendaEntity->getNome() ?? '', $fazendaDTO->getNome()) !== 0 &&
             $this->fazendaRepository->existePorUsuarioENome($idUsuario, $fazendaDTO->getNome())
         ) {
-            return false;
+            throw new \DomainException('Já existe uma fazenda com esse nome.');
         }
 
         if ($this->mapDtoParaEntity($fazendaDTO, $fazendaEntity)) {
+            if (!$this->sincronizarVeterinarios($fazendaEntity, $idUsuario, $fazendaDTO->getVeterinariosIds())) {
+                throw new \DomainException('Um ou mais veterinários selecionados são inválidos.');
+            }
             $this->entityManager->flush();
             return true;
         }
@@ -99,9 +106,7 @@ class FazendaService {
         return false;
     }
 
-    public function excluir(int $idFazenda, int $idUsuario): bool {
-        $fazendaEntity = $this->fazendaRepository->find($idFazenda);
-
+    public function excluir(Fazenda $fazendaEntity, int $idUsuario): bool {
         if (!$fazendaEntity || !$this->fazendaPertenceAoUsuario($fazendaEntity, $idUsuario)) {
             return false;
         }
@@ -140,6 +145,12 @@ class FazendaService {
         return $listFazendasDTO;
     }
 
+    /** @return Fazenda[] */
+    public function listarEntidades(int $idUsuario): array
+    {
+        return $this->fazendaRepository->buscarPorUsuario($idUsuario);
+    }
+
     private function mapDtoParaEntity(FazendaDTO $dto, Fazenda $entity): bool 
     {
         if (
@@ -152,6 +163,36 @@ class FazendaService {
         $entity->setNome($dto->getNome());
         $entity->setResponsavel($dto->getResponsavel());
         $entity->setTamanhoHA($dto->getTamanhoHA());
+
+        return true;
+    }
+
+    private function sincronizarVeterinarios(Fazenda $fazenda, int $idUsuario, array $veterinariosIds): bool
+    {
+        $ids = array_values(array_unique(array_filter(
+            $veterinariosIds,
+            static fn (mixed $id): bool => is_int($id) && $id > 0
+        )));
+
+        $veterinarios = $ids === [] ? [] : $this->veterinarioRepository->findBy(['id' => $ids]);
+
+        if (count($veterinarios) !== count($ids)) {
+            return false;
+        }
+
+        foreach ($veterinarios as $veterinario) {
+            if ($veterinario->getUsuario()?->getId() !== $idUsuario) {
+                return false;
+            }
+        }
+
+        foreach ($fazenda->getVeterinarios()->toArray() as $veterinarioAtual) {
+            $fazenda->removeVeterinario($veterinarioAtual);
+        }
+
+        foreach ($veterinarios as $veterinario) {
+            $fazenda->addVeterinario($veterinario);
+        }
 
         return true;
     }

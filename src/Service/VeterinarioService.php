@@ -3,6 +3,7 @@
 namespace App\Service;
 
 use App\Dto\VeterinarioDTO;
+use App\Entity\Fazenda;
 use App\Entity\Veterinario;
 use App\Repository\FazendaRepository;
 use App\Repository\UsuarioRepository;
@@ -45,32 +46,23 @@ class VeterinarioService {
         return $pagination;
     }
 
-    public function inserir(VeterinarioDTO $veterinarioDTO, int $idUsuario, ?int $idFazenda): bool {
+    public function inserir(VeterinarioDTO $veterinarioDTO, int $idUsuario): bool {
         $usuario = $this->usuarioRepository->find($idUsuario);
-        $fazenda = $idFazenda !== null ? $this->fazendaRepository->find($idFazenda) : null;
 
         if(!$usuario) {
             return false;
         }
 
-        if ($idFazenda !== null && !$fazenda) {
-            return false;
-        }
-
-        if ($fazenda && $fazenda->getUsuario()?->getId() !== $idUsuario) {
-            return false;
-        }
-
         if ($this->veterinarioRepository->existePorUsuarioECrmv($idUsuario, $veterinarioDTO->getCrmv())) {
-            return false;
+            throw new \DomainException('Já existe um veterinário com esse CRMV.');
         }
 
         $veterinarioEntity = new Veterinario();
 
         if ($this->mapDtoParaEntity($veterinarioDTO, $veterinarioEntity)) {
             $veterinarioEntity->setUsuario($usuario);
-            if ($fazenda) {
-                $veterinarioEntity->addFazenda($fazenda);
+            if (!$this->sincronizarFazendas($veterinarioEntity, $idUsuario, $veterinarioDTO->getFazendasIds())) {
+                throw new \DomainException('Uma ou mais fazendas selecionadas são inválidas.');
             }
             $this->entityManager->persist($veterinarioEntity);
             $this->entityManager->flush();
@@ -92,10 +84,13 @@ class VeterinarioService {
             strcasecmp($veterinarioEntity->getCrmv() ?? '', $veterinarioDTO->getCrmv()) !== 0 &&
             $this->veterinarioRepository->existePorUsuarioECrmv($idUsuario, $veterinarioDTO->getCrmv())
         ) {
-            return false;
+            throw new \DomainException('Já existe um veterinário com esse CRMV.');
         }
 
         if ($this->mapDtoParaEntity($veterinarioDTO, $veterinarioEntity)) {
+            if (!$this->sincronizarFazendas($veterinarioEntity, $idUsuario, $veterinarioDTO->getFazendasIds())) {
+                throw new \DomainException('Uma ou mais fazendas selecionadas são inválidas.');
+            }
             $this->entityManager->flush();
             return true;
         }
@@ -103,9 +98,7 @@ class VeterinarioService {
         return false;
     }
 
-    public function excluir(int $idVeterinario, int $idUsuario): bool {
-        $veterinarioEntity = $this->veterinarioRepository->find($idVeterinario);
-
+    public function excluir(Veterinario $veterinarioEntity, int $idUsuario): bool {
         if (!$veterinarioEntity || $veterinarioEntity->getUsuario()?->getId() !== $idUsuario) {
             return false;
         }
@@ -116,11 +109,8 @@ class VeterinarioService {
         return true;
     }
 
-    public function adicionarFazenda(int $idVeterinario, int $idFazenda, int $idUsuario): bool
+    public function adicionarFazenda(Veterinario $veterinario, Fazenda $fazenda, int $idUsuario): bool
     {
-        $veterinario = $this->veterinarioRepository->find($idVeterinario);
-        $fazenda = $this->fazendaRepository->find($idFazenda);
-
         if (!$veterinario || !$fazenda) {
             return false;
         }
@@ -141,11 +131,8 @@ class VeterinarioService {
         return true;
     }
 
-    public function removerFazenda(int $idVeterinario, int $idFazenda, int $idUsuario): bool
+    public function removerFazenda(Veterinario $veterinario, Fazenda $fazenda, int $idUsuario): bool
     {
-        $veterinario = $this->veterinarioRepository->find($idVeterinario);
-        $fazenda = $this->fazendaRepository->find($idFazenda);
-        
         if (!$veterinario || !$fazenda) {
             return false;
         }
@@ -184,6 +171,12 @@ class VeterinarioService {
         return $listVeterinarioDTO;
     }
 
+    /** @return Veterinario[] */
+    public function listarEntidades(int $idUsuario): array
+    {
+        return $this->veterinarioRepository->buscarPorUsuario($idUsuario);
+    }
+
     private function mapDtoParaEntity(VeterinarioDTO $dto, Veterinario $entity): bool {
         if ($dto->getNome() === null || $dto->getCrmv() === null) {
             return false;
@@ -191,6 +184,36 @@ class VeterinarioService {
 
         $entity->setNome($dto->getNome());
         $entity->setCrmv($dto->getCrmv());
+
+        return true;
+    }
+
+    private function sincronizarFazendas(Veterinario $veterinario, int $idUsuario, array $fazendasIds): bool
+    {
+        $ids = array_values(array_unique(array_filter(
+            $fazendasIds,
+            static fn (mixed $id): bool => is_int($id) && $id > 0
+        )));
+
+        $fazendas = $ids === [] ? [] : $this->fazendaRepository->findBy(['id' => $ids]);
+
+        if (count($fazendas) !== count($ids)) {
+            return false;
+        }
+
+        foreach ($fazendas as $fazenda) {
+            if ($fazenda->getUsuario()?->getId() !== $idUsuario) {
+                return false;
+            }
+        }
+
+        foreach ($veterinario->getFazendas()->toArray() as $fazendaAtual) {
+            $veterinario->removeFazenda($fazendaAtual);
+        }
+
+        foreach ($fazendas as $fazenda) {
+            $veterinario->addFazenda($fazenda);
+        }
 
         return true;
     }

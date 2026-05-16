@@ -10,7 +10,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Component\HttpFoundation\Request;
 
-class GadoService {
+class GadoService
+{
     private GadoRepository $gadoRepository;
     private FazendaRepository $fazendaRepository;
     private EntityManagerInterface $entityManager;
@@ -23,7 +24,8 @@ class GadoService {
     }
 
     ## Paginacao
-    public function listarTodosPorUsuarioPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator){
+    public function listarTodosPorUsuarioPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator)
+    {
         $queryBuilder = $this->gadoRepository->buscarPorUsuarioQuery($idUsuario);
 
         $pagination = $paginator->paginate(
@@ -43,28 +45,9 @@ class GadoService {
         return $pagination;
     }
 
-    public function listarGadosAbatidosPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator) {
-        $queryBuilder = $this->gadoRepository->buscarAbatidosEPorUsuarioQuery($idUsuario, $request->query->get('search'),  $request->query->get('fazendaId'), $request->query->get('condicao'));
-
-         $pagination = $paginator->paginate(
-            $queryBuilder,
-            $request->query->getInt('page', 1),
-            10
-        );
-
-        $listGadoDTO = [];
-
-        foreach ($pagination->getItems() as $gado) {
-            $listGadoDTO[] = new GadoDTO($gado);
-        }
-
-        $pagination->setItems($listGadoDTO);
-
-        return $pagination;
-    }
-
-    public function listarGadosVivosPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator){
-        $queryBuilder = $this->gadoRepository->buscarVivosEPorUsuarioQuery($idUsuario,  $request->query->get('search'),  $request->query->get('fazendaId'));
+    public function listarGadosAbatidosPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator)
+    {
+        $queryBuilder = $this->gadoRepository->buscarAbatidosEPorUsuarioQuery($idUsuario, $request->query->get('search'), $request->query->get('fazendaId'), $request->query->get('condicao'));
 
         $pagination = $paginator->paginate(
             $queryBuilder,
@@ -83,8 +66,9 @@ class GadoService {
         return $pagination;
     }
 
-    public function listarGadosParaAbatePaginado(int $idUsuario, Request $request, PaginatorInterface $paginator){
-        $queryBuilder = $this->gadoRepository->buscarParaAbateQuery($idUsuario, $request->query->get('search'),  $request->query->get('fazendaId'), $request->query->get('condicao'));
+    public function listarGadosVivosPaginado(int $idUsuario, Request $request, PaginatorInterface $paginator)
+    {
+        $queryBuilder = $this->gadoRepository->buscarVivosEPorUsuarioQuery($idUsuario, $request->query->get('search'), $request->query->get('fazendaId'));
 
         $pagination = $paginator->paginate(
             $queryBuilder,
@@ -102,23 +86,64 @@ class GadoService {
 
         return $pagination;
     }
-    
+
+    public function listarGadosParaAbatePaginado(int $idUsuario, Request $request, PaginatorInterface $paginator)
+    {
+        $queryBuilder = $this->gadoRepository->buscarParaAbateQuery($idUsuario, $request->query->get('search'), $request->query->get('fazendaId'), $request->query->get('condicao'));
+
+        $pagination = $paginator->paginate(
+            $queryBuilder,
+            $request->query->getInt('page', 1),
+            10
+        );
+
+        $listGadoDTO = [];
+
+        foreach ($pagination->getItems() as $gado) {
+            $listGadoDTO[] = new GadoDTO($gado);
+        }
+
+        $pagination->setItems($listGadoDTO);
+
+        return $pagination;
+    }
+
     ## regras
 
-    public function mandarParaAbate(array $idsGado, int $idUsuario): bool {
+    public function mandarParaAbate(array $idsGado, int $idUsuario): bool
+    {
+        $idsGado = array_values(array_unique($idsGado));
+
+        if ($idsGado === []) {
+            return false;
+        }
+
+        $gados = $this->gadoRepository->buscarVivosPorIdsEUsuario($idsGado, $idUsuario);
+
+        if (count($gados) !== count($idsGado)) {
+            throw new \DomainException('Um ou mais animais selecionados são inválidos ou não estão disponíveis para abate.');
+        }
+
+        foreach ($gados as $gado) {
+            if (!$this->deveIrParaAbate($gado)) {
+                throw new \DomainException(sprintf(
+                    'O gado de código %d não está apto para abate.',
+                    $gado->getCodigo()
+                ));
+            }
+        }
+
         $quantidade = $this->gadoRepository->mandarParaAbate($idsGado, $idUsuario);
 
-        if($quantidade == 0) {
+        if ($quantidade == 0) {
             return false;
         }
 
         return true;
     }
 
-    public function cancelarAbate(int $idGado, int $idUsuario, ?int $novoCodigo = null): bool
+    public function cancelarAbate(Gado $gado, int $idUsuario, ?int $novoCodigo = null): bool
     {
-        $gado = $this->gadoRepository->find($idGado);
-
         if (!$gado || $gado->getFazenda()?->getUsuario()?->getId() !== $idUsuario) {
             return false;
         }
@@ -163,22 +188,29 @@ class GadoService {
         return true;
     }
 
-    public function inserir(GadoDTO $gadoDTO, int $idFazenda, int $idUsuario): bool {
+    public function inserir(GadoDTO $gadoDTO, int $idUsuario): bool
+    {
+        $idFazenda = $gadoDTO->getFazendaId();
+
+        if ($idFazenda === null) {
+            throw new \DomainException('Fazenda inválida.');
+        }
+
         $fazenda = $this->fazendaRepository->find($idFazenda);
 
         if (!$fazenda || $fazenda->getUsuario()?->getId() !== $idUsuario) {
-            return false;
+            throw new \DomainException('Fazenda inválida.');
         }
 
         $quantidadeGados = $this->gadoRepository->contarPorFazenda($idFazenda);
         $tamanho = $fazenda->getTamanhoHA() * 18;
 
         if ($quantidadeGados >= $tamanho) {
-            return false;
+            throw new \DomainException('A fazenda selecionada atingiu o limite de animais para a área cadastrada.');
         }
 
         if ($this->existeGadoComCodigo($idUsuario, $gadoDTO->getCodigo())) {
-            return false;
+            throw new \DomainException('Já existe um gado vivo com esse código.');
         }
 
         $gadoEntity = new Gado();
@@ -193,11 +225,41 @@ class GadoService {
         return false;
     }
 
-    public function alterar(GadoDTO $gadoDTO, int $idUsuario): bool {
+    public function alterar(GadoDTO $gadoDTO, int $idUsuario): bool
+    {
         $gadoEntity = $this->gadoRepository->find($gadoDTO->getId());
 
         if (!$gadoEntity || $gadoEntity->getFazenda()?->getUsuario()?->getId() !== $idUsuario) {
             return false;
+        }
+
+        if (
+            $gadoDTO->getCodigo() !== null &&
+            $gadoDTO->getCodigo() !== $gadoEntity->getCodigo() &&
+            $this->gadoRepository->existeGadoVivoPorCodigoExcetoId(
+                $gadoDTO->getCodigo(),
+                $idUsuario,
+                $gadoEntity->getId()
+            )
+        ) {
+            throw new \DomainException('Já existe um gado vivo com esse código.');
+        }
+
+        if ($gadoDTO->getFazendaId() !== null && $gadoDTO->getFazendaId() !== $gadoEntity->getFazenda()?->getId()) {
+            $novaFazenda = $this->fazendaRepository->find($gadoDTO->getFazendaId());
+
+            if (!$novaFazenda || $novaFazenda->getUsuario()?->getId() !== $idUsuario) {
+                throw new \DomainException('Fazenda inválida.');
+            }
+
+            $quantidadeGados = $this->gadoRepository->contarPorFazenda($novaFazenda->getId());
+            $tamanho = $novaFazenda->getTamanhoHA() * 18;
+
+            if ($quantidadeGados >= $tamanho) {
+                throw new \DomainException('A fazenda selecionada atingiu o limite de animais para a área cadastrada.');
+            }
+
+            $gadoEntity->setFazenda($novaFazenda);
         }
 
         if ($this->mapDtoParaEntity($gadoDTO, $gadoEntity)) {
@@ -208,9 +270,8 @@ class GadoService {
         return false;
     }
 
-    public function excluir(int $idGado, int $idUsuario): bool {
-        $gadoEntity = $this->gadoRepository->find($idGado);
-
+    public function excluir(Gado $gadoEntity, int $idUsuario): bool
+    {
         if (!$gadoEntity || $gadoEntity->getFazenda()?->getUsuario()?->getId() !== $idUsuario) {
             return false;
         }
@@ -222,12 +283,13 @@ class GadoService {
 
     }
 
-    public function calcularLeiteSemanalPorUsuario(int $idUsuario): float {
+    public function calcularLeiteSemanalPorUsuario(int $idUsuario): float
+    {
         $gadosEntity = $this->gadoRepository->buscarNaoAbatidosEPorUsuario($idUsuario);
 
         $leiteSemanal = 0;
 
-        foreach($gadosEntity as $gado) {
+        foreach ($gadosEntity as $gado) {
             $leiteSemanal += $gado->getLeite();
         }
 
@@ -235,19 +297,21 @@ class GadoService {
 
     }
 
-    public function calcularRacaoSemanalPorUsuario(int $idUsuario): float {
+    public function calcularRacaoSemanalPorUsuario(int $idUsuario): float
+    {
         $gadosEntity = $this->gadoRepository->buscarNaoAbatidosEPorUsuario($idUsuario);
 
         $racaoSemanal = 0;
 
-        foreach($gadosEntity as $gado) {
+        foreach ($gadosEntity as $gado) {
             $racaoSemanal += $gado->getRacao();
         }
 
         return $racaoSemanal;
     }
 
-    public function contarAnimaisElegiveis(int $idUsuario): int {
+    public function contarAnimaisElegiveis(int $idUsuario): int
+    {
         $gadosEntity = $this->gadoRepository->buscarNaoAbatidosEPorUsuario($idUsuario);
 
         $cont = 0;
@@ -256,11 +320,11 @@ class GadoService {
             $idade = $this->calcularIdadeAnos($gado->getNascimento());
             $racaoSemanal = $gado->getRacao();
 
-            if($racaoSemanal > 500 && $idade <= 1) {
-                $cont +=1;
+            if ($racaoSemanal > 500 && $idade <= 1) {
+                $cont += 1;
             }
         }
-        
+
         return $cont;
     }
 
@@ -282,7 +346,8 @@ class GadoService {
         ];
     }
 
-    public function listarUltimosCadastros(int $idUsuario): array {
+    public function listarUltimosCadastros(int $idUsuario): array
+    {
         $gados = $this->gadoRepository->buscarUltimosPorUsuario($idUsuario, 5);
         $listGadoDTO = [];
 
@@ -293,11 +358,13 @@ class GadoService {
         return $listGadoDTO;
     }
 
-    public function existeGadoComCodigo(int $usuarioId, int $codigo): bool {
+    public function existeGadoComCodigo(int $usuarioId, int $codigo): bool
+    {
         return $this->gadoRepository->existeGadoVivoPorCodigo($codigo, $usuarioId);
     }
 
-    private function mapDtoParaEntity(GadoDTO $dto, Gado $entity): bool {
+    private function mapDtoParaEntity(GadoDTO $dto, Gado $entity): bool
+    {
         if ($dto->getCodigo() === null || $dto->getLeite() === null || $dto->getPeso() === null || $dto->getNascimento() === null || $dto->getRacao() === null) {
             return false;
         }
@@ -311,7 +378,8 @@ class GadoService {
         return true;
     }
 
-    private function calcularIdadeAnos(\DateTimeImmutable $nascimento): int {
+    private function calcularIdadeAnos(\DateTimeImmutable $nascimento): int
+    {
         $hoje = new \DateTimeImmutable();
         $intervalo = $nascimento->diff($hoje);
 
@@ -319,16 +387,19 @@ class GadoService {
     }
 
     /** Obtenha o peso vivo: Pesagem do animal (em kg). Calcule a carcaça: Multiplique o peso vivo pelo rendimento (ex: 50% = 0,50). Divida por 15: O resultado em kg dividido por 15 dá o número de arrobas. */
-    private function calcularArroba(float $peso): float {
+    private function calcularArroba(float $peso): float
+    {
         return ($peso * 0.5) / 15;
     }
 
     //quantidade ingerida por semana dividido por 7
-    private function calcularRacaoIngerida(float $racao): float {
+    private function calcularRacaoIngerida(float $racao): float
+    {
         return $racao / 7;
     }
 
-    private function deveIrParaAbate(Gado $gado): bool{
+    private function deveIrParaAbate(Gado $gado): bool
+    {
         $idade = $this->calcularIdadeAnos($gado->getNascimento());
         $litrosLeite = $gado->getLeite();
         $arroba = $this->calcularArroba($gado->getPeso());
@@ -349,7 +420,7 @@ class GadoService {
         if ($arroba >= 18) {
             return true;
         }
-        
+
         return false;
     }
 }
