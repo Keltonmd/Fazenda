@@ -131,6 +131,89 @@ body {
   box-shadow: 0 0 0 3px rgba(116,198,157,.2);
   outline: none;
 }
+.relation-picker-button {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  background-color: #fff;
+}
+.relation-picker-button.disabled {
+  background-color: #f8fbf6;
+  color: var(--muted);
+}
+.relation-picker-menu {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+.relation-picker-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: #f8fbf6;
+}
+.relation-picker-clear {
+  text-decoration: none;
+  white-space: nowrap;
+}
+.relation-picker-options {
+  display: grid;
+  gap: .35rem;
+  padding: .5rem;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.relation-picker-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .8rem .9rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), background-color var(--transition);
+}
+.relation-picker-option:hover {
+  border-color: #9fd4ae;
+  background: #f8fffa;
+}
+.relation-picker-option:has(.relation-choice-input:checked) {
+  border-color: var(--accent);
+  background: #f1fbf4;
+  box-shadow: 0 0 0 3px rgba(116,198,157,.16);
+}
+.relation-choice-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.relation-picker-option-text {
+  font-size: .9rem;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+}
+.relation-picker-check {
+  color: var(--primary);
+  opacity: 0;
+  transform: scale(.9);
+  transition: opacity var(--transition), transform var(--transition);
+}
+.relation-picker-option:has(.relation-choice-input:checked) .relation-picker-check {
+  opacity: 1;
+  transform: scale(1);
+}
+.relation-picker-empty {
+  padding: .9rem 1rem;
+  color: var(--muted);
+  font-size: .85rem;
+}
 .input-group-text {
   border-color: var(--border);
   background: #f8fbf6;

@@ -22,3 +22,20 @@
 .search-wrap .form-control {
   padding-left: 2rem;
 }
+
+@media (min-width: 768px) {
+  .fazenda-modal-grid .fazenda-modal-field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fazenda-modal-grid .fazenda-modal-field .form-label {
+    min-height: 2.75rem;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .fazenda-modal-grid .fazenda-modal-field .input-group {
+    align-items: stretch;
+  }
+}

@@ -155,6 +155,8 @@ body.auth-body::after {
 
 /* ── Campos de formulário ── */
 .auth-input {
+  position: relative;
+  z-index: 1;
   width: 100%;
   padding: .48rem .8rem;
   background: rgba(255,255,255,.10);
@@ -172,14 +174,36 @@ body.auth-body::after {
   background: rgba(255,255,255,.15);
   box-shadow: 0 0 0 3px rgba(116,198,157,.25);
 }
+.auth-input.is-invalid {
+  border-color: rgba(230,57,70,.7);
+  box-shadow: 0 0 0 3px rgba(230,57,70,.18);
+}
+.auth-input.is-invalid:focus {
+  border-color: rgba(255,179,184,.9);
+  box-shadow: 0 0 0 3px rgba(230,57,70,.22);
+}
 .auth-input::-webkit-inner-spin-button,
 .auth-input::-webkit-outer-spin-button { -webkit-appearance: none; }
 .auth-input[type=number] { appearance: textfield; -moz-appearance: textfield; }
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #fff;
+  caret-color: #fff;
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 0 0 1000px rgba(27,67,50,.88) inset;
+  -webkit-box-shadow: 0 0 0 1000px rgba(27,67,50,.88) inset;
+  transition: background-color 9999s ease-out 0s;
+}
 
 /* ── Grupo input com ícone ── */
 .auth-input-group {
   position: relative;
   margin-bottom: .5rem;
+}
+.auth-input-shell {
+  position: relative;
 }
 .auth-input-group .auth-input-icon {
   position: absolute;
@@ -189,6 +213,7 @@ body.auth-body::after {
   color: rgba(255,255,255,.45);
   font-size: .95rem;
   pointer-events: none;
+  z-index: 2;
 }
 .auth-input-group .auth-input { padding-left: 2.5rem; }
 
@@ -261,6 +286,28 @@ body.auth-body::after {
   color: rgba(255,255,255,.75);
   border: 1px solid rgba(255,255,255,.18);
 }
+.auth-feedback ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Erros inline de campo ── */
+.auth-field-errors {
+  min-height: 1rem;
+  margin-top: .35rem;
+  font-size: .75rem;
+  color: #ffb3b8;
+}
+.auth-field-errors:empty {
+  min-height: 0;
+  margin-top: 0;
+}
+.auth-field-errors ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
 /* ── Link de alternância (Login ↔ Cadastro) ── */
 .auth-switch {
@@ -304,6 +351,7 @@ body.auth-body::after {
   padding: 0;
   line-height: 1;
   transition: color var(--auth-transition);
+  z-index: 2;
 }
 .auth-toggle-pw:hover { color: rgba(255,255,255,.85); }
 
