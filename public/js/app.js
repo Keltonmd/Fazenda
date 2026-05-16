@@ -1,8 +1,8 @@
 window.AgroApp = (() => {
+  const FLASH_STORAGE_KEY = 'agroPendingFlashes';
+
   // ── Token JWT ──
   const getToken = () => localStorage.getItem('jwtToken') ?? null;
-
-  const setToken = (token) => localStorage.setItem('jwtToken', token);
 
   const clearSession = () => {
     localStorage.removeItem('jwtToken');
@@ -12,15 +12,6 @@ window.AgroApp = (() => {
  
   // Lê o nome do usuário logado.
   const getCurrentUserName = () => localStorage.getItem('userName') ?? 'Usuário';
-
-  const parseJwtPayload = (token) => {
-    try {
-      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      return JSON.parse(atob(base64));
-    } catch {
-      return null;
-    }
-  };
 
 
 
@@ -49,24 +40,11 @@ window.AgroApp = (() => {
     return '';
   };
 
-  const formatDate = (value) => {
-    const parsed = parseApiDate(value);
-    if (!parsed) {
-      return '-';
-    }
-
-    const date = new Date(parsed);
-    if (Number.isNaN(date.getTime())) {
-      return escapeHtml(parsed);
-    }
-
-    return new Intl.DateTimeFormat('pt-BR').format(date);
-  };
-
   const fetchJson = async (url, options = {}) => {
     const token = getToken();
 
     const config = {
+      credentials: 'same-origin',
       headers: {
         Accept: 'application/json',
       },
@@ -102,13 +80,52 @@ window.AgroApp = (() => {
     }
 
     if (!response.ok) {
-      const serverMsg = data?.error || data?.message || data?.detail || null;
+      const serverDetails = _extractErrorDetails(data);
+      const serverMsg = serverDetails.join('\n');
       const friendlyMsg = _friendlyError(response.status, serverMsg);
-      throw new Error(friendlyMsg);
+      const error = new Error(serverDetails.length > 1 ? 'Verifique os campos informados.' : friendlyMsg);
+      error.details = serverDetails.length > 0 ? serverDetails : [friendlyMsg];
+      throw error;
     }
 
     return data;
   };
+
+  const _normalizeStringMessages = (raw) => {
+    return String(raw)
+      .split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => line.replace(/^Object\([^)]+\)\.?/, ''))
+      .filter(Boolean);
+  };
+
+  const normalizeMessages = (value) => {
+    if (value instanceof Error) {
+      return Array.isArray(value.details)
+        ? Array.from(new Set(value.details.flatMap(item => normalizeMessages(item))))
+        : normalizeMessages(value.message);
+    }
+
+    if (!value) {
+      return [];
+    }
+
+    if (Array.isArray(value)) {
+      return Array.from(new Set(value.flatMap(item => normalizeMessages(item))));
+    }
+
+    if (typeof value === 'object') {
+      return Array.from(new Set(Object.values(value).flatMap(item => normalizeMessages(item))));
+    }
+
+    return Array.from(new Set(_normalizeStringMessages(value)));
+  };
+
+  const _extractErrorDetails = (data) => {
+    return normalizeMessages(data?.errors ?? data?.error ?? data?.message ?? data?.detail ?? null);
+  };
+
 
   function _friendlyError(status, serverMsg) {
     if (serverMsg && !/^(\d{3}|internal|exception|trace|stack)/i.test(serverMsg)) {
@@ -177,6 +194,64 @@ window.AgroApp = (() => {
     setTimeout(close, duration);
   };
 
+  const setFeedback = (container, messages, type = 'danger', options = {}) => {
+    if (!container) {
+      return;
+    }
+
+    const normalizedMessages = normalizeMessages(messages);
+
+    if (normalizedMessages.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    if (normalizedMessages.length === 1) {
+      container.innerHTML = `<div class="alert alert-${type} py-2 mb-0">${escapeHtml(normalizedMessages[0])}</div>`;
+      return;
+    }
+
+    const title = options.title ?? 'Verifique os itens abaixo:';
+    const items = normalizedMessages
+      .map(message => `<li>${escapeHtml(message)}</li>`)
+      .join('');
+
+    container.innerHTML = `
+      <div class="alert alert-${type} py-2 mb-0">
+        <div class="fw-semibold mb-1">${escapeHtml(title)}</div>
+        <ul class="mb-0 ps-3">
+          ${items}
+        </ul>
+      </div>
+    `;
+  };
+
+  const persistFlash = (type, message) => {
+    const flashes = takePendingFlashes(false);
+    flashes.push({ type, message });
+    sessionStorage.setItem(FLASH_STORAGE_KEY, JSON.stringify(flashes));
+  };
+
+  const takePendingFlashes = (clear = true) => {
+    try {
+      const raw = sessionStorage.getItem(FLASH_STORAGE_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      const flashes = Array.isArray(parsed) ? parsed : [];
+
+      if (clear) {
+        sessionStorage.removeItem(FLASH_STORAGE_KEY);
+      }
+
+      return flashes;
+    } catch (_) {
+      if (clear) {
+        sessionStorage.removeItem(FLASH_STORAGE_KEY);
+      }
+
+      return [];
+    }
+  };
+
   // ── Modal de confirmação visual ──
   /**
    * @param {string}  message 
@@ -237,15 +312,15 @@ window.AgroApp = (() => {
   return {
     escapeHtml,
     fetchJson,
-    formatDate,
     getCurrentUserName,
     getToken,
-    setToken,
+    normalizeMessages,
+    persistFlash,
+    setFeedback,
+    takePendingFlashes,
     clearSession,
     parseApiDate,
     toast,
     confirm,
   };
 })();
-
-

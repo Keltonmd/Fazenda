@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function () {
   // ── Helpers ──
 
   function validarSenha(val) {
-    if (!val || val.length < 6)    return 'A senha deve ter pelo menos 6 caracteres.';
+    if (!val || val.length < 8)    return 'A senha deve ter pelo menos 8 caracteres.';
     if (!/[A-Z]/.test(val))        return 'A senha deve conter pelo menos uma letra maiúscula.';
     if (!/[a-z]/.test(val))        return 'A senha deve conter pelo menos uma letra minúscula.';
     if (!/[0-9]/.test(val))        return 'A senha deve conter pelo menos um número.';
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function atualizarRequisitos(val) {
-    setReq('req-length', val.length >= 6);
+    setReq('req-length', val.length >= 8);
     setReq('req-upper',  /[A-Z]/.test(val));
     setReq('req-lower',  /[a-z]/.test(val));
     setReq('req-number', /[0-9]/.test(val));

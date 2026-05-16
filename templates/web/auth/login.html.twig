@@ -8,6 +8,9 @@
 
 {% block body %}
 <main class="auth-page" id="login-page">
+  {% set emailInputClass = loginForm.email.vars.attr.class|default('auth-input') %}
+  {% set passwordInputClass = loginForm.password.vars.attr.class|default('auth-input has-toggle') %}
+  {% set hasServerErrors = loginForm.vars.submitted and not loginForm.vars.valid %}
 
   <div class="auth-card">
 
@@ -32,40 +35,56 @@
     <h1 class="auth-title">Bem-vindo de volta</h1>
     <p class="auth-subtitle">Informe seu e-mail e senha para acessar o painel.</p>
 
-    {# ── Formulário ── #}
-    <form id="loginForm" method="post" action="#" novalidate>
+    {{ form_start(loginForm, {
+      attr: {
+        id: 'loginForm',
+        novalidate: 'novalidate'
+      }
+    }) }}
 
       {# E-mail #}
       <div class="auth-input-group">
-        <label class="auth-label" for="loginEmail">E-mail</label>
-        <div style="position:relative;">
+
+        {{ form_label(loginForm.email, null, {
+          label_attr: {
+            class: 'auth-label'
+          }
+        }) }}
+
+        <div class="auth-input-shell">
           <i class="bi bi-envelope auth-input-icon"></i>
-          <input
-            type="email"
-            id="loginEmail"
-            name="email"
-            class="auth-input"
-            placeholder="seu@email.com"
-            required
-            autocomplete="username"
-          >
+
+          {{ form_widget(loginForm.email, {
+            attr: {
+              class: emailInputClass ~ (loginForm.email.vars.errors|length ? ' is-invalid' : '')
+            }
+          }) }}
         </div>
+
+        <div class="auth-field-errors" id="loginEmailErrors">
+          {{ form_errors(loginForm.email) }}
+        </div>
+
       </div>
 
       {# Senha #}
       <div class="auth-input-group">
-        <label class="auth-label" for="loginPassword">Senha</label>
-        <div style="position:relative;">
+
+        {{ form_label(loginForm.password, null, {
+          label_attr: {
+            class: 'auth-label'
+          }
+        }) }}
+
+        <div class="auth-input-shell">
           <i class="bi bi-lock auth-input-icon"></i>
-          <input
-            type="password"
-            id="loginPassword"
-            name="password"
-            class="auth-input has-toggle"
-            placeholder="Sua senha"
-            required
-            autocomplete="current-password"
-          >
+
+          {{ form_widget(loginForm.password, {
+            attr: {
+              class: passwordInputClass ~ (loginForm.password.vars.errors|length ? ' is-invalid' : '')
+            }
+          }) }}
+
           <button
             type="button"
             id="toggleLoginPassword"
@@ -76,17 +95,36 @@
             <i class="bi bi-eye" id="toggleLoginPasswordIcon"></i>
           </button>
         </div>
+
+        <div class="auth-field-errors" id="loginPasswordErrors">
+          {{ form_errors(loginForm.password) }}
+        </div>
+
       </div>
 
       <button type="submit" class="auth-btn" id="login-submit-btn">
         <span id="login-btn-content">
-          <i class="bi bi-box-arrow-in-right me-1"></i> Entrar no painel
+          <i class="bi bi-box-arrow-in-right me-1"></i>
+          Entrar no painel
         </span>
       </button>
 
-      <div class="auth-feedback" id="loginFeedback" role="alert" aria-live="polite"></div>
+      <div
+        class="auth-feedback{% if hasServerErrors %} is-danger{% endif %}"
+        id="loginFeedback"
+        role="alert"
+        aria-live="polite"
+      >
+        {% if hasServerErrors %}
+          {% if loginForm.vars.errors|length %}
+            {{ form_errors(loginForm) }}
+          {% else %}
+            Verifique os campos destacados.
+          {% endif %}
+        {% endif %}
+      </div>
 
-    </form>
+    {{ form_end(loginForm) }}
 
     <hr class="auth-divider">
 
