@@ -9,46 +9,56 @@
 {% endblock %}
 
 {% block body %}
+{% set query = app.request.query.all %}
 
 <div class="page-toolbar">
   <h5>
     <i class="fa-solid fa-cow" aria-hidden="true"></i>
     Lista de Gados Vivos
-    <span class="badge-count ms-1" id="badge-gados-count">0</span>
+    <span class="badge-count ms-1" id="badge-gados-count">{{ gados.totalItemCount }}</span>
   </h5>
   <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalGado" id="btn-novo-gado">
     <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Novo Gado
   </button>
 </div>
 
-{# ── FILTROS ── #}
-<div class="card mb-3">
+<form method="get" action="{{ path('gados_index') }}" class="card mb-3">
   <div class="card-body py-2">
     <div class="row g-2 align-items-end">
       <div class="col-12 col-sm-6 col-md-4">
         <div class="search-wrap">
           <i class="bi bi-search search-icon" aria-hidden="true"></i>
-          <input type="text" id="filtro-gado-q"
+          <input type="text" id="filtro-gado-q" name="search"
                  class="form-control form-control-sm"
                  placeholder="Buscar por código..."
+                 value="{{ app.request.query.get('search') }}"
                  aria-label="Buscar gado por código">
         </div>
       </div>
       <div class="col-6 col-sm-4 col-md-3">
-        <select id="filtro-gado-fazenda" class="form-select form-select-sm" aria-label="Filtrar por fazenda">
+        <select id="filtro-gado-fazenda" name="fazendaId" class="form-select form-select-sm" aria-label="Filtrar por fazenda">
           <option value="">Fazenda</option>
+          {% for fazenda in fazendasOpcoes %}
+            <option value="{{ fazenda.id }}" {% if app.request.query.get('fazendaId') == (fazenda.id ~ '') %}selected{% endif %}>
+              {{ fazenda.nome }}
+            </option>
+          {% endfor %}
         </select>
       </div>
       <div class="col-auto">
-        <button type="button" class="btn btn-sm btn-light" id="btn-limpar-filtro-gado">
-          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-search me-1" aria-hidden="true"></i>Filtrar
         </button>
+      </div>
+      <div class="col-auto">
+        <a href="{{ path('gados_index') }}" class="btn btn-sm btn-light" id="btn-limpar-filtro-gado">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        </a>
       </div>
     </div>
   </div>
-</div>
+</form>
 
-{# ── TABELA ── #}
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0 table-responsive-cards">
@@ -62,33 +72,88 @@
           <th class="text-end">Ações</th>
         </tr>
       </thead>
-      <tbody id="gados-tbody">
-        <tr><td colspan="6" class="text-center text-muted py-5">
-          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando gados...
-        </td></tr>
+      <tbody>
+        {% for gado in gados %}
+          <tr>
+            <td data-label="Código">{{ gado.codigo ?? '—' }}</td>
+            <td data-label="Peso (kg)" class="fw-semibold">{{ gado.peso|number_format(1, ',', '.') }}</td>
+            <td data-label="Leite (L/sem)" class="d-none d-md-table-cell">{{ gado.leite|number_format(1, ',', '.') }}</td>
+            <td data-label="Ração (kg/sem)" class="d-none d-md-table-cell">{{ gado.racao|number_format(1, ',', '.') }}</td>
+            <td data-label="Nascimento" class="d-none d-sm-table-cell">{{ gado.nascimento ? gado.nascimento|date('d/m/Y') : '—' }}</td>
+            <td class="text-end td-actions">
+              <div class="action-group">
+                <button
+                  class="btn-action btn-action-edit btn-editar-gado"
+                  title="Editar"
+                  data-id="{{ gado.id }}"
+                  data-codigo="{{ gado.codigo ?? '' }}"
+                  data-peso="{{ gado.peso }}"
+                  data-leite="{{ gado.leite }}"
+                  data-racao="{{ gado.racao }}"
+                  data-nascimento="{{ gado.nascimento ? gado.nascimento|date('Y-m-d') : '' }}"
+                  data-fazenda-id="{{ gado.fazendaId ?? '' }}"
+                  type="button"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn-action btn-action-delete btn-delete-gado"
+                  title="Excluir"
+                  data-id="{{ gado.id }}"
+                  data-codigo="{{ gado.codigo ?? '' }}"
+                  type="button"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="6" class="text-center text-muted py-5">
+              <i class="bi bi-inbox fs-2 d-block mb-2"></i>Nenhum gado encontrado.
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
   <div class="card-footer d-flex justify-content-between align-items-center">
-    <button class="btn btn-sm btn-light" id="btn-prev">
-      <i class="bi bi-chevron-left"></i> Anterior
-    </button>
+    {% if gados.currentPageNumber > 1 %}
+      <a href="{{ path('gados_index', query|merge({'page': gados.currentPageNumber - 1})) }}" class="btn btn-sm btn-light" id="btn-prev">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-prev" disabled>
+        <i class="bi bi-chevron-left"></i> Anterior
+      </button>
+    {% endif %}
 
     <span id="pagination-info" class="text-muted small">
-      Página 1 de 1
+      Página {{ gados.currentPageNumber }} de {{ gados.pageCount }}
     </span>
 
-    <button class="btn btn-sm btn-light" id="btn-next">
-      Próxima <i class="bi bi-chevron-right"></i>
-    </button>
+    {% if gados.currentPageNumber < gados.pageCount %}
+      <a href="{{ path('gados_index', query|merge({'page': gados.currentPageNumber + 1})) }}" class="btn btn-sm btn-light" id="btn-next">
+        Próxima <i class="bi bi-chevron-right"></i>
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-next" disabled>
+        Próxima <i class="bi bi-chevron-right"></i>
+      </button>
+    {% endif %}
   </div>
 </div>
 
-{# ════ MODAL CADASTRO/EDIÇÃO GADO ════ #}
 <div class="modal fade" id="modalGado" tabindex="-1" aria-labelledby="modalGadoTitle" aria-modal="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <form id="formGado">
+      {{ form_start(gadoForm, {
+        attr: {
+          id: 'formGado',
+          novalidate: 'novalidate'
+        }
+      }) }}
         <input type="hidden" id="gadoId">
 
         <div class="modal-header">
@@ -100,34 +165,82 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-6 col-md-4">
-              <label class="form-label" for="gadoCodigo">Código</label>
-              <input type="number" id="gadoCodigo" class="form-control" placeholder="Ex.: 1" min="1" step="1">
+              {{ form_label(gadoForm.codigo, null, {
+                label_attr: { class: 'form-label', for: 'gadoCodigo' }
+              }) }}
+              {{ form_widget(gadoForm.codigo, {
+                attr: {
+                  id: 'gadoCodigo',
+                  class: gadoForm.codigo.vars.attr.class ~ (gadoForm.codigo.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(gadoForm.codigo) }}
             </div>
             <div class="col-6 col-md-4">
-              <label class="form-label" for="gadoPeso">Peso (kg) <span class="text-danger" aria-hidden="true">*</span></label>
-              <input type="number" id="gadoPeso" class="form-control"
-                     step="0.1" min="0" placeholder="0.0" required aria-required="true">
+              {{ form_label(gadoForm.peso, null, {
+                label_attr: { class: 'form-label', for: 'gadoPeso' }
+              }) }}
+              {{ form_widget(gadoForm.peso, {
+                attr: {
+                  id: 'gadoPeso',
+                  class: gadoForm.peso.vars.attr.class ~ (gadoForm.peso.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(gadoForm.peso) }}
             </div>
             <div class="col-6 col-md-4">
-              <label class="form-label" for="gadoLeite">Leite (L/semana)</label>
-              <input type="number" id="gadoLeite" class="form-control" step="1" min="0" placeholder="0">
+              {{ form_label(gadoForm.leite, null, {
+                label_attr: { class: 'form-label', for: 'gadoLeite' }
+              }) }}
+              {{ form_widget(gadoForm.leite, {
+                attr: {
+                  id: 'gadoLeite',
+                  class: gadoForm.leite.vars.attr.class ~ (gadoForm.leite.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(gadoForm.leite) }}
             </div>
             <div class="col-6 col-md-4">
-              <label class="form-label" for="gadoRacao">Ração (kg/semana)</label>
-              <input type="number" id="gadoRacao" class="form-control" step="0.1" min="0" placeholder="0.0">
+              {{ form_label(gadoForm.racao, null, {
+                label_attr: { class: 'form-label', for: 'gadoRacao' }
+              }) }}
+              {{ form_widget(gadoForm.racao, {
+                attr: {
+                  id: 'gadoRacao',
+                  class: gadoForm.racao.vars.attr.class ~ (gadoForm.racao.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(gadoForm.racao) }}
             </div>
             <div class="col-6 col-md-4">
-              <label class="form-label" for="gadoNascimento">Data de Nascimento <span class="text-danger" aria-hidden="true">*</span></label>
-              <input type="date" id="gadoNascimento" class="form-control" required aria-required="true">
+              {{ form_label(gadoForm.nascimento, null, {
+                label_attr: { class: 'form-label', for: 'gadoNascimento' }
+              }) }}
+              {{ form_widget(gadoForm.nascimento, {
+                attr: {
+                  id: 'gadoNascimento',
+                  class: gadoForm.nascimento.vars.attr.class ~ (gadoForm.nascimento.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(gadoForm.nascimento) }}
             </div>
             <div class="col-12 col-md-4">
-              <label class="form-label" for="gadoFazenda">Fazenda <span class="text-danger" aria-hidden="true">*</span></label>
-              <select id="gadoFazenda" class="form-select" required aria-required="true">
-                <option value="">Selecione a fazenda</option>
-              </select>
+              {{ form_label(gadoForm.fazendaId, null, {
+                label_attr: { class: 'form-label', for: 'gadoFazenda' }
+              }) }}
+              {{ form_widget(gadoForm.fazendaId, {
+                attr: {
+                  id: 'gadoFazenda',
+                  class: gadoForm.fazendaId.vars.attr.class ~ (gadoForm.fazendaId.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(gadoForm.fazendaId) }}
             </div>
           </div>
           <div id="gado-form-feedback" class="mt-3" role="alert" aria-live="polite"></div>
+          {% if gadoForm.vars.submitted and not gadoForm.vars.valid and gadoForm.vars.errors|length %}
+            <div class="alert alert-danger mt-3 mb-0">{{ form_errors(gadoForm) }}</div>
+          {% endif %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -136,12 +249,11 @@
             <span id="gadoBtnLabel">Cadastrar gado</span>
           </button>
         </div>
-      </form>
+      {{ form_end(gadoForm) }}
     </div>
   </div>
 </div>
 
-{# ════ MODAL EXCLUIR GADO ════ #}
 <div class="modal fade" id="modalDeleteGado" tabindex="-1" aria-labelledby="modalDeleteGadoTitle" aria-modal="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
@@ -169,5 +281,15 @@
 {% endblock %}
 
 {% block extra_js %}
+  {% if gadoForm.vars.submitted and not gadoForm.vars.valid %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('modalGado');
+        if (modal) {
+          new bootstrap.Modal(modal).show();
+        }
+      });
+    </script>
+  {% endif %}
   <script src="{{ asset('js/gados/gados.js') }}"></script>
 {% endblock %}
