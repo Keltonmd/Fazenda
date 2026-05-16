@@ -34,9 +34,24 @@ security:
             stateless: true
             provider: usuario_provider
             jwt: ~
+            logout:
+                path: app_logout
+                target: /
+                delete_cookies:
+                    BEARER:
+                        path: /
 
         main:
-            security: false
+            pattern: ^/
+            stateless: true
+            provider: usuario_provider
+            jwt: ~
+            logout:
+                path: app_logout
+                target: /
+                delete_cookies:
+                    BEARER:
+                        path: /
 
     access_control:
         - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
