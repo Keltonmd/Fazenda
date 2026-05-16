@@ -33,8 +33,12 @@ class UsuarioService {
     }
 
     public function inserir(UsuarioDTO $usuarioDTO): bool {
-        if ($usuarioDTO->getEmail() === null || $this->emailJaEstaEmUso($usuarioDTO->getEmail())) {
+        if ($usuarioDTO->getEmail() === null) {
             return false;
+        }
+
+        if ($this->emailJaEstaEmUso($usuarioDTO->getEmail())) {
+            throw new \DomainException('Já existe um usuário com esse e-mail.');
         }
 
         $usuarioEntity = new Usuario();
@@ -84,8 +88,12 @@ class UsuarioService {
             return false;
         }
 
-        if ($usuarioDTO->getEmail() === null || $this->emailJaEstaEmUso($usuarioDTO->getEmail(), $usuarioEntity->getId())) {
+        if ($usuarioDTO->getEmail() === null) {
             return false;
+        }
+
+        if ($this->emailJaEstaEmUso($usuarioDTO->getEmail(), $usuarioEntity->getId())) {
+            throw new \DomainException('Já existe um usuário com esse e-mail.');
         }
 
         if ($this->mapDtoParaEntity($usuarioDTO, $usuarioEntity)) {
