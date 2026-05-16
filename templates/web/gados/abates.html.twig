@@ -9,40 +9,51 @@
 {% endblock %}
 
 {% block body %}
+{% set query = app.request.query.all %}
+{% set filtrosAtivos = app.request.query.get('search') or app.request.query.get('fazendaId') or app.request.query.get('condicao') %}
 
-{# ── CABEÇALHO DA PÁGINA ── #}
 <div class="page-toolbar">
   <div class="abates-header">
     <div class="abates-title-icon">
-      <i class="bi bi-scissors"></i>
+      <i class="bi bi-scissors" aria-hidden="true"></i>
     </div>
     <div>
-      <h5 class="mb-0">
-        Gerenciamento de Abates
-      </h5>
+      <h5 class="mb-0">Gerenciamento de Abates</h5>
       <p class="text-muted mb-0" style="font-size:.78rem;">Lista de animais prontos para abate e histórico</p>
     </div>
   </div>
   <div class="d-flex gap-2">
-    <div class="btn-group" role="group">
-      <input type="radio" class="btn-check" name="tabAbates" id="tab-para-abate" autocomplete="off" checked>
-      <label class="btn btn-outline-primary" for="tab-para-abate">Gados para abate <span class="badge bg-primary ms-1" id="badge-para-abate">0</span></label>
-
-      <input type="radio" class="btn-check" name="tabAbates" id="tab-abatidos" autocomplete="off">
-      <label class="btn btn-outline-secondary" for="tab-abatidos">Gados abatidos <span class="badge bg-secondary ms-1" id="badge-abates-count">0</span></label>
+    <div class="btn-group abates-tab-switcher" role="group" aria-label="Alternar listagem de abates">
+      <a
+        href="{{ path('abates_index', query|merge({'aba': 'para_abate', 'page': 1})) }}"
+        class="btn {{ abaAtiva == 'para_abate' ? 'btn-primary' : 'btn-outline-primary' }}"
+      >
+        Gados para abate
+        <span class="badge {{ abaAtiva == 'para_abate' ? 'bg-light text-primary' : 'bg-primary' }} ms-1">
+          {{ resumoAbates.quantidadeParaAbate ?? 0 }}
+        </span>
+      </a>
+      <a
+        href="{{ path('abates_index', query|merge({'aba': 'abatidos', 'page': 1})) }}"
+        class="btn {{ abaAtiva == 'abatidos' ? 'btn-secondary' : 'btn-outline-secondary' }}"
+      >
+        Gados abatidos
+        <span class="badge {{ abaAtiva == 'abatidos' ? 'bg-light text-secondary' : 'bg-secondary' }} ms-1">
+          {{ resumoAbates.quantidadeAbatidos ?? 0 }}
+        </span>
+      </a>
     </div>
   </div>
 </div>
 
-{# ── CARDS DE RESUMO ── #}
 <div class="row g-3 mb-3">
   <div class="col-12 col-md-4">
     <div class="abate-summary-card">
       <div class="summary-icon red">
-        <i class="bi bi-scissors"></i>
+        <i class="bi bi-scissors" aria-hidden="true"></i>
       </div>
       <div>
-        <div class="summary-value" id="summary-total-abates">—</div>
+        <div class="summary-value">{{ resumoAbates.quantidadeAbatidos ?? 0 }}</div>
         <div class="summary-label">Total de abates</div>
       </div>
     </div>
@@ -50,10 +61,10 @@
   <div class="col-12 col-md-4">
     <div class="abate-summary-card">
       <div class="summary-icon amber">
-        <i class="bi bi-speedometer2"></i>
+        <i class="bi bi-speedometer2" aria-hidden="true"></i>
       </div>
       <div>
-        <div class="summary-value" id="summary-peso-medio">—</div>
+        <div class="summary-value">{{ (resumoAbates.pesoMedioAbatidos ?? 0)|number_format(1, ',', '.') }} kg</div>
         <div class="summary-label">Peso médio</div>
       </div>
     </div>
@@ -61,102 +72,208 @@
   <div class="col-12 col-md-4">
     <div class="abate-summary-card">
       <div class="summary-icon slate">
-        <i class="bi bi-droplet-fill"></i>
+        <i class="bi bi-droplet-fill" aria-hidden="true"></i>
       </div>
       <div>
-        <div class="summary-value" id="summary-leite-total">—</div>
+        <div class="summary-value">{{ (resumoAbates.leitePerdidoAbatidos ?? 0)|number_format(1, ',', '.') }} L/sem</div>
         <div class="summary-label">Leite total (L/sem dos abatidos)</div>
       </div>
     </div>
   </div>
 </div>
 
-{# ── FILTROS ── #}
-<div class="abates-filter-card">
+<form method="get" action="{{ path('abates_index') }}" class="abates-filter-card">
+  <input type="hidden" name="aba" value="{{ abaAtiva }}">
   <div class="row g-2 align-items-end">
     <div class="col-12 col-lg-4">
       <div class="search-wrap">
-        <i class="bi bi-search search-icon"></i>
-        <input type="text" id="filtro-abate-q"
-               class="form-control form-control-sm"
-               placeholder="Buscar por código ">
+        <i class="bi bi-search search-icon" aria-hidden="true"></i>
+        <input
+          type="text"
+          id="filtro-abate-q"
+          name="search"
+          class="form-control form-control-sm"
+          placeholder="Buscar por código"
+          value="{{ app.request.query.get('search') }}"
+          aria-label="Buscar gado por código"
+        >
       </div>
     </div>
     <div class="col-12 col-sm-6 col-lg-3">
-      <select id="filtro-abate-fazenda" class="form-select form-select-sm">
+      <select id="filtro-abate-fazenda" name="fazendaId" class="form-select form-select-sm" aria-label="Filtrar por fazenda">
         <option value="">Todas as fazendas</option>
+        {% for fazenda in fazendasOpcoes %}
+          <option value="{{ fazenda.id }}" {% if app.request.query.get('fazendaId') == (fazenda.id ~ '') %}selected{% endif %}>
+            {{ fazenda.nome }}
+          </option>
+        {% endfor %}
       </select>
     </div>
     <div class="col-12 col-sm-6 col-lg-3">
-      <select id="filtro-abate-condicao" class="form-select form-select-sm">
+      <select id="filtro-abate-condicao" name="condicao" class="form-select form-select-sm" aria-label="Filtrar por condição">
         <option value="">Todas as condições</option>
-        <option value="IDADE_MAIOR_5">Idade maior que 5 anos</option>
-        <option value="LEITE_MENOR_40">Leite menor que 40 L/semana</option>
-        <option value="LEITE_RACAO_CRITICO">Leite < 70 L/semana e ração > 50 kg/dia</option>
-        <option value="ARROBA_MAIOR_18">Peso maior que 18 arrobas</option>
+        <option value="IDADE_MAIOR_5" {% if app.request.query.get('condicao') == 'IDADE_MAIOR_5' %}selected{% endif %}>Idade maior que 5 anos</option>
+        <option value="LEITE_MENOR_40" {% if app.request.query.get('condicao') == 'LEITE_MENOR_40' %}selected{% endif %}>Leite menor que 40 L/semana</option>
+        <option value="LEITE_RACAO_CRITICO" {% if app.request.query.get('condicao') == 'LEITE_RACAO_CRITICO' %}selected{% endif %}>Leite &lt; 70 L/semana e ração &gt; 50 kg/dia</option>
+        <option value="ARROBA_MAIOR_18" {% if app.request.query.get('condicao') == 'ARROBA_MAIOR_18' %}selected{% endif %}>Peso maior que 18 arrobas</option>
       </select>
     </div>
-    <div class="col-12 col-lg-2 d-flex align-items-end gap-2">
-      <button type="button" class="btn btn-sm btn-light flex-grow-1" id="btn-limpar-filtro-abate"
-              style="height:31px;">
-        <i class="bi bi-x-lg me-1"></i>Limpar
-      </button>
+    <div class="col-12 col-lg-2">
+      <div class="abates-filter-actions">
+        <button type="submit" class="btn btn-sm btn-primary abates-filter-btn">
+        <i class="bi bi-search me-1" aria-hidden="true"></i>Filtrar
+        </button>
+        <a href="{{ path('abates_index', {'aba': abaAtiva}) }}" class="btn btn-sm btn-light abates-filter-btn" id="btn-limpar-filtro-abate">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        </a>
+      </div>
     </div>
   </div>
 
-  {# Ação em lote — exibida apenas quando na aba "Para Abate" #}
-  <div class="d-flex align-items-center justify-content-end mt-2" id="bulk-action-wrap">
-    <button type="button" class="btn btn-sm btn-danger" id="btn-bulk-abater" disabled>
-      <i class="bi bi-scissors me-1"></i>
-      Abater Selecionados (<span id="bulk-count">0</span>)
-    </button>
-  </div>
-</div>
+  {% if abaAtiva == 'para_abate' %}
+    <div class="abates-bulk-actions" id="bulk-action-wrap">
+      <button type="button" class="btn btn-sm btn-danger abates-bulk-btn" id="btn-bulk-abater" disabled>
+        <i class="bi bi-scissors me-1" aria-hidden="true"></i>
+        Abater Selecionados (<span id="bulk-count">0</span>)
+      </button>
+    </div>
+  {% endif %}
+</form>
 
-{# ── TABELA DE ABATES ── #}
 <div class="abates-table-wrap">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead id="abates-thead">
-        <tr>
-          <th><input type="checkbox" id="check-all-abates" class="form-check-input"></th>
-          <th>Código</th>
-          <th>Peso (kg)</th>
-          <th>Leite (L/sem)</th>
-          <th>Ração (kg/sem)</th>
-          <th>Nascimento</th>
-          <th>Fazenda</th>
-        </tr>
+        {% if abaAtiva == 'para_abate' %}
+          <tr>
+            <th><input type="checkbox" id="check-all-abates" class="form-check-input"></th>
+            <th>Código</th>
+            <th>Peso (kg)</th>
+            <th>Leite (L/sem)</th>
+            <th>Ração (kg/sem)</th>
+            <th>Nascimento</th>
+            <th>Fazenda</th>
+          </tr>
+        {% else %}
+          <tr>
+            <th>Código</th>
+            <th>Peso (kg)</th>
+            <th>Leite (L/sem)</th>
+            <th>Ração (kg/sem)</th>
+            <th>Nascimento</th>
+            <th>Data do abate</th>
+            <th>Fazenda</th>
+            <th></th>
+          </tr>
+        {% endif %}
       </thead>
       <tbody id="abates-tbody">
-        <tr><td colspan="7" class="text-center text-muted py-5">
-          <span class="spinner-border spinner-border-sm me-2"></span>Carregando abates...
-        </td></tr>
+        {% for gado in listaAtiva %}
+          {% set fazendaNome = fazendasPorId[gado.fazendaId] ?? null %}
+          {% set arrobas = (gado.peso * 0.5) / 15 %}
+          {% if abaAtiva == 'para_abate' %}
+            <tr class="abate-row-highlight" data-id="{{ gado.id }}">
+              <td><input type="checkbox" class="form-check-input gado-check" value="{{ gado.id }}"></td>
+              <td>{{ gado.codigo ?? '—' }}</td>
+              <td>
+                <div class="fw-semibold">{{ gado.peso|number_format(1, ',', '.') }} kg</div>
+                <div class="abate-meta">{{ arrobas|number_format(1, ',', '.') }} arrobas</div>
+              </td>
+              <td>{{ gado.leite|number_format(1, ',', '.') }} L/sem</td>
+              <td>{{ gado.racao|number_format(1, ',', '.') }} kg/sem</td>
+              <td>{{ gado.nascimento ? gado.nascimento|date('d/m/Y') : '—' }}</td>
+              <td>{{ fazendaNome ?: '—' }}</td>
+            </tr>
+          {% else %}
+            <tr class="abate-row-highlight">
+              <td>{{ gado.codigo ?? '—' }}</td>
+              <td>
+                <div class="fw-semibold">{{ gado.peso|number_format(1, ',', '.') }} kg</div>
+                <div class="abate-meta">{{ arrobas|number_format(1, ',', '.') }} arrobas</div>
+              </td>
+              <td>{{ gado.leite|number_format(1, ',', '.') }} L/sem</td>
+              <td>{{ gado.racao|number_format(1, ',', '.') }} kg/sem</td>
+              <td>{{ gado.nascimento ? gado.nascimento|date('d/m/Y') : '—' }}</td>
+              <td>
+                <div class="fw-semibold">{{ gado.dataAbate ? gado.dataAbate|date('d/m/Y H:i') : '—' }}</div>
+                <div class="abate-meta">
+                  {% if gado.podeCancelarAbate %}
+                    Cancelar até {{ gado.dataLimiteCancelamentoAbate ? gado.dataLimiteCancelamentoAbate|date('d/m/Y H:i') : '—' }}
+                  {% else %}
+                    Prazo de cancelamento encerrado
+                  {% endif %}
+                </div>
+              </td>
+              <td>{{ fazendaNome ?: '—' }}</td>
+              <td class="text-end">
+                {% if gado.podeCancelarAbate %}
+                  <button
+                    class="btn btn-sm btn-outline-warning btn-cancelar-abate"
+                    type="button"
+                    title="Cancelar abate"
+                    data-id="{{ gado.id }}"
+                    data-codigo="{{ gado.codigo ?? '' }}"
+                    data-data-abate="{{ gado.dataAbate ? gado.dataAbate|date('c') : '' }}"
+                    data-data-limite-cancelamento="{{ gado.dataLimiteCancelamentoAbate ? gado.dataLimiteCancelamentoAbate|date('c') : '' }}"
+                  >
+                    <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Cancelar
+                  </button>
+                {% else %}
+                  <span class="text-muted small">Prazo encerrado</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endif %}
+        {% else %}
+          <tr>
+            <td colspan="{{ abaAtiva == 'para_abate' ? 7 : 8 }}" class="abates-empty">
+              <i class="bi bi-inbox" aria-hidden="true"></i>
+              {% if filtrosAtivos %}
+                Nenhum gado encontrado para os filtros selecionados.
+              {% elseif abaAtiva == 'para_abate' %}
+                Nenhum gado listado para abate.
+              {% else %}
+                Nenhum gado abatido encontrado.
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
   <div class="card-footer d-flex justify-content-between align-items-center">
-    <button class="btn btn-sm btn-light" id="btn-prev">
-      <i class="bi bi-chevron-left"></i> Anterior
-    </button>
+    {% if listaAtiva.currentPageNumber > 1 %}
+      <a href="{{ path('abates_index', query|merge({'aba': abaAtiva, 'page': listaAtiva.currentPageNumber - 1})) }}" class="btn btn-sm btn-light" id="btn-prev">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-prev" disabled>
+        <i class="bi bi-chevron-left"></i> Anterior
+      </button>
+    {% endif %}
 
     <span id="pagination-info" class="text-muted small">
-      Página 1 de 1
+      Página {{ listaAtiva.currentPageNumber }} de {{ listaAtiva.pageCount }}
     </span>
 
-    <button class="btn btn-sm btn-light" id="btn-next">
-      Próxima <i class="bi bi-chevron-right"></i>
-    </button>
+    {% if listaAtiva.currentPageNumber < listaAtiva.pageCount %}
+      <a href="{{ path('abates_index', query|merge({'aba': abaAtiva, 'page': listaAtiva.currentPageNumber + 1})) }}" class="btn btn-sm btn-light" id="btn-next">
+        Próxima <i class="bi bi-chevron-right"></i>
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-next" disabled>
+        Próxima <i class="bi bi-chevron-right"></i>
+      </button>
+    {% endif %}
   </div>
 </div>
 
-{# ════ MODAL CANCELAR ABATE ════ #}
 <div class="modal fade" id="modalCancelarAbate" tabindex="-1" aria-labelledby="modalCancelarAbateTitle" aria-modal="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modalCancelarAbateTitle">
-          <i class="bi bi-arrow-counterclockwise text-warning me-2"></i>Cancelar Abate
+          <i class="bi bi-arrow-counterclockwise text-warning me-2" aria-hidden="true"></i>Cancelar Abate
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
@@ -167,7 +284,6 @@
           O animal voltará a aparecer como <span class="text-success fw-semibold">ativo</span>.
         </p>
 
-        {# Campo de novo código — exibido apenas se o código atual já está em uso #}
         <div id="novo-codigo-wrap" style="display:none;" class="mb-2">
           <label class="form-label">Novo código para o animal <span class="text-danger">*</span></label>
           <input type="number" id="novo-codigo-input" class="form-control"
@@ -179,14 +295,13 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Fechar</button>
         <button type="button" class="btn btn-warning" id="btn-confirmar-cancelar-abate">
-          <i class="bi bi-arrow-counterclockwise me-1"></i>Confirmar cancelamento
+          <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Confirmar cancelamento
         </button>
       </div>
     </div>
   </div>
 </div>
 
-{# ════ MODAL DE CONFIRMAÇÃO GENÉRICO ════ #}
 {% include 'components/modal_confirm.html.twig' %}
 
 {% endblock %}

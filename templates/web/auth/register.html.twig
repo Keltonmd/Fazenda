@@ -8,10 +8,12 @@
 
 {% block body %}
 <main class="auth-page" id="register-page">
+  {% set nomeInputClass = registerForm.nome.vars.attr.class|default('auth-input') %}
+  {% set emailInputClass = registerForm.email.vars.attr.class|default('auth-input') %}
+  {% set passwordInputClass = registerForm.password.vars.attr.class|default('auth-input has-toggle') %}
+  {% set hasServerErrors = registerForm.vars.submitted and not registerForm.vars.valid %}
 
   <div class="auth-card">
-
-    {# ── Logo ── #}
     <div class="auth-logo">
       <div class="auth-logo-icon">
         <img
@@ -28,61 +30,63 @@
       </div>
     </div>
 
-    {# ── Título ── #}
     <h1 class="auth-title">Criar conta</h1>
     <p class="auth-subtitle">Preencha os dados abaixo para se cadastrar.</p>
 
-    {# ── Formulário ── #}
-    <form id="registerForm" method="post" action="#" novalidate>
-
-      {# Nome #}
+    {{ form_start(registerForm, {
+      attr: {
+        id: 'registerForm',
+        novalidate: 'novalidate'
+      }
+    }) }}
       <div class="auth-input-group">
-        <label class="auth-label" for="registerNome">Nome completo</label>
-        <div style="position:relative;">
+        {{ form_label(registerForm.nome, null, {
+          label_attr: { class: 'auth-label' }
+        }) }}
+        <div class="auth-input-shell">
           <i class="bi bi-person auth-input-icon"></i>
-          <input
-            type="text"
-            id="registerNome"
-            name="nome"
-            class="auth-input"
-            placeholder="Ex.: João da Silva"
-            required
-            autocomplete="name"
-          >
+          {{ form_widget(registerForm.nome, {
+            attr: {
+              id: 'registerNome',
+              class: nomeInputClass ~ (registerForm.nome.vars.errors|length ? ' is-invalid' : '')
+            }
+          }) }}
+        </div>
+        <div class="auth-field-errors" id="registerNomeErrors">
+          {{ form_errors(registerForm.nome) }}
         </div>
       </div>
 
-      {# E-mail #}
       <div class="auth-input-group">
-        <label class="auth-label" for="registerEmail">E-mail</label>
-        <div style="position:relative;">
+        {{ form_label(registerForm.email, null, {
+          label_attr: { class: 'auth-label' }
+        }) }}
+        <div class="auth-input-shell">
           <i class="bi bi-envelope auth-input-icon"></i>
-          <input
-            type="email"
-            id="registerEmail"
-            name="email"
-            class="auth-input"
-            placeholder="seu@email.com"
-            required
-            autocomplete="email"
-          >
+          {{ form_widget(registerForm.email, {
+            attr: {
+              id: 'registerEmail',
+              class: emailInputClass ~ (registerForm.email.vars.errors|length ? ' is-invalid' : '')
+            }
+          }) }}
+        </div>
+        <div class="auth-field-errors" id="registerEmailErrors">
+          {{ form_errors(registerForm.email) }}
         </div>
       </div>
 
-      {# Senha #}
       <div class="auth-input-group" style="margin-bottom:.4rem;">
-        <label class="auth-label" for="registerPassword">Senha</label>
-        <div style="position:relative;">
+        {{ form_label(registerForm.password, null, {
+          label_attr: { class: 'auth-label' }
+        }) }}
+        <div class="auth-input-shell">
           <i class="bi bi-lock auth-input-icon"></i>
-          <input
-            type="password"
-            id="registerPassword"
-            name="password"
-            class="auth-input has-toggle"
-            placeholder="Mínimo 6 caracteres"
-            required
-            autocomplete="new-password"
-          >
+          {{ form_widget(registerForm.password, {
+            attr: {
+              id: 'registerPassword',
+              class: passwordInputClass ~ (registerForm.password.vars.errors|length ? ' is-invalid' : '')
+            }
+          }) }}
           <button
             type="button"
             id="toggleRegisterPassword"
@@ -93,15 +97,16 @@
             <i class="bi bi-eye" id="toggleRegisterPasswordIcon"></i>
           </button>
         </div>
-        {# Requisitos de senha #}
+        <div class="auth-field-errors" id="registerPasswordErrors">
+          {{ form_errors(registerForm.password) }}
+        </div>
         <div class="password-reqs" id="password-reqs">
-          <span class="pw-req" id="req-length"><i class="bi bi-circle"></i> Mín. 6 chars</span>
+          <span class="pw-req" id="req-length"><i class="bi bi-circle"></i> Mín. 8 chars</span>
           <span class="pw-req" id="req-upper"><i class="bi bi-circle"></i> Maiúscula</span>
           <span class="pw-req" id="req-lower"><i class="bi bi-circle"></i> Minúscula</span>
           <span class="pw-req" id="req-number"><i class="bi bi-circle"></i> Número</span>
           <span class="pw-req" id="req-symbol"><i class="bi bi-circle"></i> Símbolo (!@#)</span>
         </div>
-        {# Indicador de força da senha #}
         <div class="password-strength" id="password-strength-bar-wrap">
           <div class="password-strength-bar" id="password-strength-bar"></div>
         </div>
@@ -114,9 +119,16 @@
         </span>
       </button>
 
-      <div class="auth-feedback" id="registerFeedback" role="alert" aria-live="polite"></div>
-
-    </form>
+      <div class="auth-feedback{% if hasServerErrors %} is-danger{% endif %}" id="registerFeedback" role="alert" aria-live="polite">
+        {% if hasServerErrors %}
+          {% if registerForm.vars.errors|length %}
+            {{ form_errors(registerForm) }}
+          {% else %}
+            Verifique os campos destacados.
+          {% endif %}
+        {% endif %}
+      </div>
+    {{ form_end(registerForm) }}
 
     <hr class="auth-divider">
 
@@ -124,9 +136,7 @@
       Já tem conta?
       <a href="{{ path('login') }}">Entrar</a>
     </p>
-
   </div>
-
 </main>
 {% endblock %}
 

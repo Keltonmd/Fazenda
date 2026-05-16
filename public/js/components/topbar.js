@@ -11,14 +11,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let perfilCache = null;
 
-  atualizarNomeTopo(AgroApp.getCurrentUserName());
   carregarPerfil().catch(() => {});
 
   function atualizarNomeTopo(nome) {
     const label = nome || 'Usuário';
     if (nameEl) nameEl.textContent = label;
     if (nameMenuEl) nameMenuEl.textContent = label;
-    localStorage.setItem('userName', label);
   }
 
   async function carregarPerfil(force = false) {
@@ -159,7 +157,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       await AgroApp.fetchJson('/api/usuario', { method: 'DELETE' });
       AgroApp.clearSession();
-      window.location.href = '/';
+      window.location.href = '/logout';
     } catch (err) {
       if (feedbackEl) {
         feedbackEl.innerHTML = `<div class="alert alert-danger py-2">${AgroApp.escapeHtml(err.message)}</div>`;
@@ -171,6 +169,6 @@ document.addEventListener('DOMContentLoaded', function () {
   document.getElementById('btn-logout')?.addEventListener('click', function (e) {
     e.preventDefault();
     AgroApp.clearSession();
-    window.location.href = '/';
+    window.location.href = '/logout';
   });
 });

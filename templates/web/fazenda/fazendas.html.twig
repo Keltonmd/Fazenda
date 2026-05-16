@@ -9,40 +9,47 @@
 {% endblock %}
 
 {% block body %}
+{% set query = app.request.query.all %}
+{% set fazendaHasServerErrors = fazendaForm.vars.submitted and not fazendaForm.vars.valid %}
+{% set temVeterinarios = fazendaForm.veterinariosIds|length > 0 %}
 
 <div class="page-toolbar">
   <h5>
     <i class="bi bi-house-door-fill text-success" aria-hidden="true"></i>
     Lista de Fazendas
-    <span class="badge-count ms-1" id="badge-fazendas-count">0</span>
+    <span class="badge-count ms-1" id="badge-fazendas-count">{{ fazendas.totalItemCount }}</span>
   </h5>
   <button type="button" class="btn btn-primary" id="btn-nova-fazenda">
     <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Nova Fazenda
   </button>
 </div>
 
-{# ── FILTRO CLIENT-SIDE ── #}
-<div class="card mb-3">
+<form method="get" action="{{ path('fazenda_index') }}" class="card mb-3">
   <div class="card-body py-2">
     <div class="row g-2 align-items-end">
       <div class="col-12 col-md-5">
         <div class="search-wrap">
           <i class="bi bi-search search-icon" aria-hidden="true"></i>
-          <input type="text" id="filtro-fazenda" class="form-control form-control-sm"
+          <input type="text" id="filtro-fazenda" name="search" class="form-control form-control-sm"
                  placeholder="Buscar por nome ou responsável..."
+                 value="{{ app.request.query.get('search') }}"
                  aria-label="Buscar fazenda">
         </div>
       </div>
       <div class="col-auto">
-        <button type="button" class="btn btn-sm btn-light" id="btn-limpar-filtro">
-          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
         </button>
+      </div>
+      <div class="col-auto">
+        <a href="{{ path('fazenda_index') }}" class="btn btn-sm btn-light" id="btn-limpar-filtro">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        </a>
       </div>
     </div>
   </div>
-</div>
+</form>
 
-{# ── TABELA ── #}
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0 table-responsive-cards">
@@ -54,33 +61,87 @@
           <th class="text-end">Ações</th>
         </tr>
       </thead>
-      <tbody id="fazendas-tbody">
-        <tr><td colspan="4" class="text-center text-muted py-5">
-          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando fazendas...
-        </td></tr>
+      <tbody>
+        {% for fazenda in fazendas %}
+          <tr>
+            <td data-label="Nome" class="fw-semibold">{{ fazenda.nome }}</td>
+            <td data-label="Responsável">{{ fazenda.responsavel }}</td>
+            <td data-label="Área (ha)">{{ fazenda.tamanhoHA|number_format(2, ',', '.') }} ha</td>
+            <td class="text-end td-actions">
+              <div class="action-group">
+                <button
+                  class="btn-action btn-action-edit btn-editar-fazenda"
+                  title="Editar fazenda"
+                  data-id="{{ fazenda.id }}"
+                  data-nome="{{ fazenda.nome }}"
+                  data-responsavel="{{ fazenda.responsavel }}"
+                  data-tamanho="{{ fazenda.tamanhoHA }}"
+                  data-veterinarios-ids="{% for veterinario in fazenda.veterinarios %}{{ veterinario.id }}{% if not loop.last %},{% endif %}{% endfor %}"
+                  type="button"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <button
+                  class="btn-action btn-action-delete btn-delete-fazenda"
+                  title="Excluir fazenda"
+                  data-id="{{ fazenda.id }}"
+                  data-nome="{{ fazenda.nome }}"
+                  type="button"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="4">
+              <div class="table-empty-state">
+                <i class="bi bi-house-door"></i>
+                <p>Nenhuma fazenda encontrada.</p>
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
   <div class="card-footer d-flex justify-content-between align-items-center">
-    <button class="btn btn-sm btn-light" id="btn-prev">
-      <i class="bi bi-chevron-left"></i> Anterior
-    </button>
+    {% if fazendas.currentPageNumber > 1 %}
+      <a href="{{ path('fazenda_index', query|merge({'page': fazendas.currentPageNumber - 1})) }}" class="btn btn-sm btn-light" id="btn-prev">
+        <i class="bi bi-chevron-left"></i> Anterior
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-prev" disabled>
+        <i class="bi bi-chevron-left"></i> Anterior
+      </button>
+    {% endif %}
 
     <span id="pagination-info" class="text-muted small">
-      Página 1 de 1
+      Página {{ fazendas.currentPageNumber }} de {{ fazendas.pageCount }}
     </span>
 
-    <button class="btn btn-sm btn-light" id="btn-next">
-      Próxima <i class="bi bi-chevron-right"></i>
-    </button>
+    {% if fazendas.currentPageNumber < fazendas.pageCount %}
+      <a href="{{ path('fazenda_index', query|merge({'page': fazendas.currentPageNumber + 1})) }}" class="btn btn-sm btn-light" id="btn-next">
+        Próxima <i class="bi bi-chevron-right"></i>
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-next" disabled>
+        Próxima <i class="bi bi-chevron-right"></i>
+      </button>
+    {% endif %}
   </div>
 </div>
 
-{# ════ MODAL CADASTRO / EDIÇÃO DE FAZENDA ════ #}
 <div class="modal fade" id="modalFazenda" tabindex="-1" aria-labelledby="modalFazendaTitle" aria-modal="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
-      <form id="formFazendaModal">
+      {{ form_start(fazendaForm, {
+        attr: {
+          id: 'formFazendaModal',
+          novalidate: 'novalidate'
+        }
+      }) }}
         <input type="hidden" id="fazendaModalId">
 
         <div class="modal-header">
@@ -92,27 +153,95 @@
         </div>
 
         <div class="modal-body">
-          <div class="row g-3">
+          <div class="row g-3 fazenda-modal-grid">
             <div class="col-12">
-              <label class="form-label" for="fazendaModalNome">Nome da Fazenda <span class="text-danger" aria-hidden="true">*</span></label>
-              <input type="text" id="fazendaModalNome" class="form-control"
-                     placeholder="Ex.: Fazenda Boa Vista" required aria-required="true">
+              {{ form_label(fazendaForm.nome, null, {
+                label_attr: { class: 'form-label', for: 'fazendaModalNome' }
+              }) }}
+              {{ form_widget(fazendaForm.nome, {
+                attr: {
+                  id: 'fazendaModalNome',
+                  class: fazendaForm.nome.vars.attr.class ~ (fazendaForm.nome.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(fazendaForm.nome) }}
             </div>
-            <div class="col-12 col-md-7">
-              <label class="form-label" for="fazendaModalResponsavel">Responsável <span class="text-danger" aria-hidden="true">*</span></label>
-              <input type="text" id="fazendaModalResponsavel" class="form-control"
-                     placeholder="Nome do proprietário" required aria-required="true">
+            <div class="col-12 col-md-7 fazenda-modal-field">
+              {{ form_label(fazendaForm.responsavel, null, {
+                label_attr: { class: 'form-label', for: 'fazendaModalResponsavel' }
+              }) }}
+              {{ form_widget(fazendaForm.responsavel, {
+                attr: {
+                  id: 'fazendaModalResponsavel',
+                  class: fazendaForm.responsavel.vars.attr.class ~ (fazendaForm.responsavel.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(fazendaForm.responsavel) }}
             </div>
-            <div class="col-12 col-md-5">
-              <label class="form-label" for="fazendaModalTamanho">Área (hectares)</label>
+            <div class="col-12 col-md-5 fazenda-modal-field">
+              {{ form_label(fazendaForm.tamanhoHA, null, {
+                label_attr: { class: 'form-label', for: 'fazendaModalTamanho' }
+              }) }}
               <div class="input-group">
-                <input type="number" id="fazendaModalTamanho" class="form-control"
-                       step="0.01" min="0" placeholder="0.00">
+                {{ form_widget(fazendaForm.tamanhoHA, {
+                  attr: {
+                    id: 'fazendaModalTamanho',
+                    class: fazendaForm.tamanhoHA.vars.attr.class ~ (fazendaForm.tamanhoHA.vars.errors|length ? ' is-invalid' : '')
+                  }
+                }) }}
                 <span class="input-group-text">ha</span>
               </div>
+              {{ form_errors(fazendaForm.tamanhoHA) }}
+            </div>
+            <div class="col-12">
+              {{ form_label(fazendaForm.veterinariosIds, null, {
+                label_attr: { class: 'form-label' }
+              }) }}
+              <div class="relation-picker dropdown" data-bs-auto-close="outside" id="fazendaVeterinariosPicker">
+                <button
+                  class="form-select relation-picker-button text-start{{ not temVeterinarios ? ' disabled' : '' }}"
+                  type="button"
+                  id="fazendaVeterinariosTrigger"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  {{ not temVeterinarios ? 'disabled="disabled"' : '' }}
+                >
+                  Selecione veterinários
+                </button>
+                <div class="dropdown-menu relation-picker-menu w-100 p-0" aria-labelledby="fazendaVeterinariosTrigger">
+                  <div class="relation-picker-menu-header">
+                    <span class="small text-muted">Vincule veterinários somente se quiser.</span>
+                    <button type="button" class="btn btn-link btn-sm p-0 relation-picker-clear" id="fazendaVeterinariosClear">
+                      Manter sem
+                    </button>
+                  </div>
+                  <div class="relation-picker-options">
+                    {% for option in fazendaForm.veterinariosIds %}
+                      <label class="relation-picker-option" data-label="{{ option.vars.label }}">
+                        {{ form_widget(option, {
+                          attr: {
+                            class: 'relation-choice-input js-fazenda-veterinario-option'
+                          }
+                        }) }}
+                        <span class="relation-picker-option-text">{{ option.vars.label }}</span>
+                        <i class="bi bi-check-lg relation-picker-check" aria-hidden="true"></i>
+                      </label>
+                    {% else %}
+                      <div class="relation-picker-empty">Nenhum veterinário cadastrado ainda.</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              <div class="form-text" id="fazendaVeterinariosSummary">
+                {% if temVeterinarios %}Nenhum veterinário selecionado.{% else %}Nenhum veterinário disponível para vincular.{% endif %}
+              </div>
+              {{ form_errors(fazendaForm.veterinariosIds) }}
             </div>
           </div>
           <div id="fazenda-modal-feedback" class="mt-3" role="alert" aria-live="polite"></div>
+          {% if fazendaHasServerErrors and fazendaForm.vars.errors|length %}
+            <div class="alert alert-danger mt-3 mb-0">{{ form_errors(fazendaForm) }}</div>
+          {% endif %}
         </div>
 
         <div class="modal-footer">
@@ -124,12 +253,11 @@
             <span id="fazendaModalBtnLabel">Cadastrar Fazenda</span>
           </button>
         </div>
-      </form>
+      {{ form_end(fazendaForm) }}
     </div>
   </div>
 </div>
 
-{# ════ MODAL CONFIRMAR DELETE ════ #}
 <div class="modal fade" id="modalDeleteFazenda" tabindex="-1" aria-labelledby="modalDeleteFazendaTitle" aria-modal="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
@@ -145,6 +273,7 @@
         </p>
       </div>
       <div class="modal-footer justify-content-center border-0 pb-4 gap-2">
+        <div id="delete-fazenda-feedback" class="w-100 px-4 pb-2" role="alert" aria-live="polite"></div>
         <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
           <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Cancelar
         </button>
@@ -159,5 +288,15 @@
 {% endblock %}
 
 {% block extra_js %}
+  {% if fazendaForm.vars.submitted and not fazendaForm.vars.valid %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('modalFazenda');
+        if (modal) {
+          new bootstrap.Modal(modal).show();
+        }
+      });
+    </script>
+  {% endif %}
   <script src="{{ asset('js/fazenda/fazendas.js') }}"></script>
 {% endblock %}

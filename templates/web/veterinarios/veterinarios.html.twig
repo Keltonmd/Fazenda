@@ -9,42 +9,48 @@
 {% endblock %}
 
 {% block body %}
+{% set query = app.request.query.all %}
+{% set temFazendas = veterinarioForm.fazendasIds|length > 0 %}
 
 <div class="page-toolbar">
   <h5>
     <i class="bi bi-person-badge-fill text-primary" aria-hidden="true"></i>
     Lista de Veterinários
-    <span class="badge-count ms-1" id="badge-vets-count">0</span>
+    <span class="badge-count ms-1" id="badge-vets-count">{{ veterinarios.totalItemCount }}</span>
   </h5>
   <button class="btn btn-primary" id="btn-novo-vet"
-          data-bs-toggle="modal" data-bs-target="#modalVeterinario">
+          data-bs-toggle="modal" data-bs-target="#modalVeterinario" type="button">
     <i class="bi bi-plus-lg me-1" aria-hidden="true"></i> Novo Veterinário
   </button>
 </div>
 
-{# ── FILTRO CLIENT-SIDE ── #}
-<div class="card mb-3">
+<form method="get" action="{{ path('veterinarios_index') }}" class="card mb-3">
   <div class="card-body py-2">
     <div class="row g-2 align-items-end">
       <div class="col-12 col-md-4">
         <div class="search-wrap">
           <i class="bi bi-search search-icon" aria-hidden="true"></i>
-          <input type="text" id="filtro-vet-q"
+          <input type="text" id="filtro-vet-q" name="search"
                  class="form-control form-control-sm"
                  placeholder="Buscar por nome ou CRMV..."
+                 value="{{ app.request.query.get('search') }}"
                  aria-label="Buscar veterinário">
         </div>
       </div>
       <div class="col-auto">
-        <button type="button" class="btn btn-sm btn-light" id="btn-limpar-filtro-vet">
-          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        <button type="submit" class="btn btn-sm btn-primary">
+          <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
         </button>
+      </div>
+      <div class="col-auto">
+        <a href="{{ path('veterinarios_index') }}" class="btn btn-sm btn-light" id="btn-limpar-filtro-vet">
+          <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Limpar
+        </a>
       </div>
     </div>
   </div>
-</div>
+</form>
 
-{# ── TABELA ── #}
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0 table-responsive-cards">
@@ -56,33 +62,132 @@
           <th class="text-end">Ações</th>
         </tr>
       </thead>
-      <tbody id="vets-tbody">
-        <tr><td colspan="4" class="text-center text-muted py-5">
-          <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Carregando veterinários...
-        </td></tr>
+
+      <tbody>
+        {% for vet in veterinarios %}
+          <tr>
+            <td data-label="Nome" class="fw-semibold">{{ vet.nome }}</td>
+            <td data-label="CRMV" class="crmv-text">{{ vet.crmv }}</td>
+            <td data-label="Fazendas">
+              <div class="td-fazendas-content">
+                <div class="vet-fazendas-summary">
+                  {% if vet.fazendas|length > 0 %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle badge-fazenda">
+                      {{ vet.fazendas|length }} {{ vet.fazendas|length == 1 ? 'fazenda vinculada' : 'fazendas vinculadas' }}
+                    </span>
+                    <div class="vet-fazendas-preview">
+                      {% for fazenda in vet.fazendas|slice(0, 2) %}
+                        <span>{{ fazenda.nome }}</span>{% if not loop.last %}, {% endif %}
+                      {% endfor %}
+                      {% if vet.fazendas|length > 2 %}
+                        <span>+{{ vet.fazendas|length - 2 }}</span>
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <span class="text-muted small">Nenhuma fazenda vinculada</span>
+                  {% endif %}
+                </div>
+                <div class="vet-fazendas-actions">
+                  <button
+                    class="btn btn-xs btn-outline-secondary btn-consultar-fazendas-vet"
+                    data-id="{{ vet.id }}"
+                    data-nome="{{ vet.nome }}"
+                    data-fazendas="{{ vet.fazendas|json_encode|e('html_attr') }}"
+                    type="button"
+                    title="Consultar fazendas vinculadas"
+                  >
+                    <i class="bi bi-eye me-1"></i>Consultar
+                  </button>
+                  <button
+                    class="btn btn-xs btn-outline-success btn-ger-fazendas-vet"
+                    data-id="{{ vet.id }}"
+                    data-nome="{{ vet.nome }}"
+                    data-fazendas="{{ vet.fazendas|json_encode|e('html_attr') }}"
+                    type="button"
+                    title="Adicionar ou remover fazendas"
+                  >
+                    <i class="bi bi-house-gear me-1"></i>Gerenciar
+                  </button>
+                </div>
+              </div>
+            </td>
+            <td class="text-end td-actions">
+              <div class="action-group">
+                <button
+                  class="btn-action btn-action-edit btn-editar-vet"
+                  data-id="{{ vet.id }}"
+                  data-nome="{{ vet.nome }}"
+                  data-crmv="{{ vet.crmv }}"
+                  data-fazendas-ids="{% for fazenda in vet.fazendas %}{{ fazenda.id }}{% if not loop.last %},{% endif %}{% endfor %}"
+                  type="button"
+                  title="Editar"
+                >
+                  <i class="bi bi-pencil"></i>
+                </button>
+
+                <button
+                  class="btn-action btn-action-delete btn-delete-vet"
+                  data-id="{{ vet.id }}"
+                  data-nome="{{ vet.nome }}"
+                  type="button"
+                  title="Excluir"
+                >
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="4" class="text-center text-muted py-5">
+              Nenhum veterinário encontrado.
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
-  <div class="card-footer d-flex justify-content-between align-items-center">
-    <button class="btn btn-sm btn-light" id="btn-prev">
-      <i class="bi bi-chevron-left"></i> Anterior
-    </button>
 
-    <span id="pagination-info" class="text-muted small">
-      Página 1 de 1
+  <div class="card-footer d-flex justify-content-between align-items-center">
+    {% if veterinarios.currentPageNumber > 1 %}
+      <a href="{{ path('veterinarios_index', query|merge({'page': veterinarios.currentPageNumber - 1})) }}" class="btn btn-sm btn-light" id="btn-prev">
+        <i class="bi bi-chevron-left"></i>
+        Anterior
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-prev" disabled>
+        <i class="bi bi-chevron-left"></i>
+        Anterior
+      </button>
+    {% endif %}
+
+    <span class="text-muted small" id="pagination-info">
+      Página {{ veterinarios.currentPageNumber }} de {{ veterinarios.pageCount }}
     </span>
 
-    <button class="btn btn-sm btn-light" id="btn-next">
-      Próxima <i class="bi bi-chevron-right"></i>
-    </button>
+    {% if veterinarios.currentPageNumber < veterinarios.pageCount %}
+      <a href="{{ path('veterinarios_index', query|merge({'page': veterinarios.currentPageNumber + 1})) }}" class="btn btn-sm btn-light" id="btn-next">
+        Próxima
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    {% else %}
+      <button class="btn btn-sm btn-light" id="btn-next" disabled>
+        Próxima
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    {% endif %}
   </div>
 </div>
 
-{# ════ MODAL CADASTRO/EDIÇÃO ════ #}
 <div class="modal fade" id="modalVeterinario" tabindex="-1" aria-labelledby="modalVetTitle" aria-modal="true">
   <div class="modal-dialog">
     <div class="modal-content">
-      <form id="formVeterinario">
+      {{ form_start(veterinarioForm, {
+        attr: {
+          id: 'formVeterinario',
+          novalidate: 'novalidate'
+        }
+      }) }}
         <input type="hidden" id="vetId">
 
         <div class="modal-header">
@@ -94,27 +199,78 @@
         <div class="modal-body">
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label" for="vetNome">Nome completo <span class="text-danger" aria-hidden="true">*</span></label>
-              <input type="text" id="vetNome" class="form-control"
-                     placeholder="Ex.: Dr. Carlos Silva" required aria-required="true">
+              {{ form_label(veterinarioForm.nome, null, {
+                label_attr: { class: 'form-label', for: 'vetNome' }
+              }) }}
+              {{ form_widget(veterinarioForm.nome, {
+                attr: {
+                  id: 'vetNome',
+                  class: veterinarioForm.nome.vars.attr.class ~ (veterinarioForm.nome.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(veterinarioForm.nome) }}
             </div>
             <div class="col-12">
-              <label class="form-label" for="vetCrmv">CRMV <span class="text-danger" aria-hidden="true">*</span></label>
-              <input type="text" id="vetCrmv" class="form-control"
-                     placeholder="Ex.: CRMV-SP 12345"
-                     pattern="^CRMV-(SP|RJ|MG)\s\d{4,6}$"
-                     title="Formato: CRMV-SP 12345 (estado: SP, RJ ou MG)"
-                     required aria-required="true">
+              {{ form_label(veterinarioForm.crmv, null, {
+                label_attr: { class: 'form-label', for: 'vetCrmv' }
+              }) }}
+              {{ form_widget(veterinarioForm.crmv, {
+                attr: {
+                  id: 'vetCrmv',
+                  class: veterinarioForm.crmv.vars.attr.class ~ (veterinarioForm.crmv.vars.errors|length ? ' is-invalid' : '')
+                }
+              }) }}
+              {{ form_errors(veterinarioForm.crmv) }}
             </div>
-            <div class="col-12" id="vetFazendaWrap">
-              <label class="form-label" for="vetFazenda">Fazenda inicial <small class="text-muted">(opcional)</small></label>
-              <select id="vetFazenda" class="form-select">
-                <option value="">Sem fazenda inicial</option>
-              </select>
-              <div class="form-text">Você pode cadastrar sem fazenda e adicionar vínculos depois.</div>
+            <div class="col-12" id="vetFazendasWrap">
+              {{ form_label(veterinarioForm.fazendasIds, null, {
+                label_attr: { class: 'form-label' }
+              }) }}
+              <div class="relation-picker dropdown" data-bs-auto-close="outside" id="vetFazendasPicker">
+                <button
+                  class="form-select relation-picker-button text-start{{ not temFazendas ? ' disabled' : '' }}"
+                  type="button"
+                  id="vetFazendasTrigger"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  {{ not temFazendas ? 'disabled="disabled"' : '' }}
+                >
+                  Selecione fazendas
+                </button>
+                <div class="dropdown-menu relation-picker-menu w-100 p-0" aria-labelledby="vetFazendasTrigger">
+                  <div class="relation-picker-menu-header">
+                    <span class="small text-muted">Vincule fazendas somente se quiser.</span>
+                    <button type="button" class="btn btn-link btn-sm p-0 relation-picker-clear" id="vetFazendasClear">
+                      Manter sem
+                    </button>
+                  </div>
+                  <div class="relation-picker-options" id="vetFazendas">
+                    {% for option in veterinarioForm.fazendasIds %}
+                      <label class="relation-picker-option" data-label="{{ option.vars.label }}">
+                        {{ form_widget(option, {
+                          attr: {
+                            class: 'relation-choice-input js-veterinario-fazenda-option'
+                          }
+                        }) }}
+                        <span class="relation-picker-option-text">{{ option.vars.label }}</span>
+                        <i class="bi bi-check-lg relation-picker-check" aria-hidden="true"></i>
+                      </label>
+                    {% else %}
+                      <div class="relation-picker-empty">Nenhuma fazenda cadastrada ainda.</div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              <div class="form-text" id="vetFazendasSummary">
+                {% if temFazendas %}Nenhuma fazenda selecionada.{% else %}Nenhuma fazenda disponível para vincular.{% endif %}
+              </div>
+              {{ form_errors(veterinarioForm.fazendasIds) }}
             </div>
           </div>
           <div id="vet-form-feedback" class="mt-3" role="alert" aria-live="polite"></div>
+          {% if veterinarioForm.vars.submitted and not veterinarioForm.vars.valid and veterinarioForm.vars.errors|length %}
+            <div class="alert alert-danger mt-3 mb-0">{{ form_errors(veterinarioForm) }}</div>
+          {% endif %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
@@ -123,12 +279,11 @@
             <span id="vetBtnLabel">Cadastrar</span>
           </button>
         </div>
-      </form>
+      {{ form_end(veterinarioForm) }}
     </div>
   </div>
 </div>
 
-{# ════ MODAL GERENCIAR FAZENDAS DO VET ════ #}
 <div class="modal fade" id="modalVetFazendas" tabindex="-1" aria-labelledby="modalVetFazendasTitle" aria-modal="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -142,22 +297,32 @@
         <p class="text-muted mb-3">
           Veterinário: <strong id="vet-fazendas-nome"></strong>
         </p>
-        <div class="alert alert-light border small">
-          Use esta tela para adicionar ou remover fazendas vinculadas a este veterinário.
+        <div class="alert alert-light border small" id="vet-fazendas-mode-note">
+          Use esta tela para gerenciar as fazendas vinculadas a este veterinário.
         </div>
 
         <div class="mb-3">
           <h6 class="fw-semibold mb-2">
             <i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>Fazendas vinculadas
           </h6>
-          <div id="vet-fazendas-vinculadas-list">
-            <p class="text-muted small">Nenhuma fazenda vinculada.</p>
+          <div class="vet-fazendas-toolbar">
+            <div class="small text-muted" id="vet-fazendas-resumo">Nenhuma fazenda vinculada.</div>
+            <input
+              type="text"
+              id="vet-fazendas-filtro"
+              class="form-control form-control-sm"
+              placeholder="Filtrar fazendas vinculadas..."
+              aria-label="Filtrar fazendas vinculadas"
+            >
+          </div>
+          <div class="vet-fazendas-linked-list" id="vet-fazendas-vinculadas-list">
+            <p class="text-muted small mb-0">Nenhuma fazenda vinculada.</p>
           </div>
         </div>
 
         <hr>
 
-        <div class="mb-2">
+        <div class="mb-2" id="vet-fazendas-add-section">
           <h6 class="fw-semibold mb-2">
             <i class="bi bi-plus-circle text-primary me-1" aria-hidden="true"></i>Adicionar fazenda
           </h6>
@@ -179,7 +344,6 @@
   </div>
 </div>
 
-{# ════ MODAL CONFIRMAR DELETE ════ #}
 <div class="modal fade" id="modalDeleteVet" tabindex="-1" aria-labelledby="modalDeleteVetTitle" aria-modal="true">
   <div class="modal-dialog modal-dialog-centered modal-sm">
     <div class="modal-content">
@@ -193,6 +357,7 @@
         <p class="text-muted" style="font-size:.82rem;">Esta ação não pode ser desfeita.</p>
       </div>
       <div class="modal-footer justify-content-center border-0 pb-4 gap-2">
+        <div id="delete-vet-feedback" class="w-100 px-4 pb-2" role="alert" aria-live="polite"></div>
         <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">
           <i class="bi bi-x-lg me-1" aria-hidden="true"></i>Cancelar
         </button>
@@ -204,11 +369,23 @@
   </div>
 </div>
 
-{# ════ MODAL DE CONFIRMAÇÃO GENÉRICO ════ #}
 {% include 'components/modal_confirm.html.twig' %}
 
 {% endblock %}
 
 {% block extra_js %}
+  {% if veterinarioForm.vars.submitted and not veterinarioForm.vars.valid %}
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const modal = document.getElementById('modalVeterinario');
+        if (modal) {
+          new bootstrap.Modal(modal).show();
+        }
+      });
+    </script>
+  {% endif %}
+  <script type="application/json" id="todas-fazendas-json">
+    {{ fazendasOpcoes|map(f => {'id': f.id, 'nome': f.nome})|json_encode|raw }}
+  </script>
   <script src="{{ asset('js/veterinarios/veterinarios.js') }}"></script>
 {% endblock %}
