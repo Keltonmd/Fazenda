@@ -39,6 +39,17 @@ class VeterinarioRepository extends ServiceEntityRepository
     }
 
     /** @return Veterinario[] */
+    public function buscarPorUsuario(int $idUsuario): array
+    {
+        return $this->createQueryBuilder('v')
+            ->where('v.usuario = :idUsuario')
+            ->setParameter('idUsuario', $idUsuario)
+            ->orderBy('v.nome', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return Veterinario[] */
     public function buscarUltimosPorUsuario(int $idUsuario, int $limite = 5): array
     {
         return $this->createQueryBuilder('v')

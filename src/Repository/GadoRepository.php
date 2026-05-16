@@ -169,6 +169,44 @@ class GadoRepository extends ServiceEntityRepository
         return $result > 0;
     }
 
+    public function existeGadoVivoPorCodigoExcetoId(int $codigo, int $idUsuario, int $idIgnorado): bool
+    {
+        $result = $this->createQueryBuilder('g')
+            ->select('COUNT(g.id)')
+            ->join('g.fazenda', 'f')
+            ->join('f.usuario', 'u')
+            ->where('g.codigo = :codigo')
+            ->andWhere('u.id = :idUsuario')
+            ->andWhere('g.abatido = false')
+            ->andWhere('g.id != :idIgnorado')
+            ->setParameter('codigo', $codigo)
+            ->setParameter('idUsuario', $idUsuario)
+            ->setParameter('idIgnorado', $idIgnorado)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result > 0;
+    }
+
+    /** @return Gado[] */
+    public function buscarVivosPorIdsEUsuario(array $idsGado, int $idUsuario): array
+    {
+        if (empty($idsGado)) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('g')
+            ->join('g.fazenda', 'f')
+            ->join('f.usuario', 'u')
+            ->where('u.id = :idUsuario')
+            ->andWhere('g.id IN (:ids)')
+            ->andWhere('g.abatido = false')
+            ->setParameter('idUsuario', $idUsuario)
+            ->setParameter('ids', $idsGado)
+            ->getQuery()
+            ->getResult();
+    }
+
     ## Querys Para KnpPaginatorBundle
 
     public function buscarPorUsuarioQuery(int $idUsuario) {
@@ -208,7 +246,7 @@ class GadoRepository extends ServiceEntityRepository
                     g.nascimento <= :dataLimite
                     OR g.leite < 40
                     OR (g.racao / 7 > 50 AND g.leite < 70)
-                    OR (g.peso * 0.5) / 15 >= 18
+                    OR g.peso / 15 >= 18
                 )
             ')
             ->setParameter('dataLimite', $dataLimite);
@@ -224,7 +262,7 @@ class GadoRepository extends ServiceEntityRepository
         }
 
         if ($condicao === 'ARROBA_MAIOR_18') {
-            $qb->andWhere('((g.peso * 0.5) / 15) >= 18');
+            $qb->andWhere('(g.peso / 15) >= 18');
         }
 
         if ($condicao === 'IDADE_MAIOR_5') {
@@ -291,7 +329,7 @@ class GadoRepository extends ServiceEntityRepository
                     g.nascimento <= :dataLimite
                     OR g.leite < 40
                     OR (g.racao / 7 > 50 AND g.leite < 70)
-                    OR (g.peso * 0.5) / 15 >= 18
+                    OR g.peso / 15 >= 18
                 )
             ')
             ->setParameter('dataLimite', $dataLimite);
@@ -307,7 +345,7 @@ class GadoRepository extends ServiceEntityRepository
         }
 
         if ($condicao === 'ARROBA_MAIOR_18') {
-            $qb->andWhere('((g.peso * 0.5) / 15) >= 18');
+            $qb->andWhere('(g.peso / 15) >= 18');
         }
 
         if ($condicao === 'IDADE_MAIOR_5') {
@@ -326,7 +364,7 @@ class GadoRepository extends ServiceEntityRepository
                     g.nascimento <= :dataLimite
                     OR g.leite < 40
                     OR (g.racao / 7 > 50 AND g.leite < 70)
-                    OR (g.peso * 0.5) / 15 >= 18
+                    OR g.peso / 15 >= 18
                 )
             ')
             ->setParameter('dataLimite', $dataLimite);
