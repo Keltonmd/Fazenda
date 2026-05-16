@@ -16,7 +16,7 @@
     <div class="stat-card">
       <div class="stat-icon green"><i class="bi bi-house-door-fill"></i></div>
       <div>
-        <div class="stat-value" id="stat-fazendas">—</div>
+        <div class="stat-value">{{ totalFazendas }}</div>
         <div class="stat-label">Fazendas cadastradas</div>
       </div>
     </div>
@@ -25,7 +25,7 @@
     <div class="stat-card">
       <div class="stat-icon yellow"><i class="fa-solid fa-cow"></i></div>
       <div>
-        <div class="stat-value" id="stat-gados">—</div>
+        <div class="stat-value">{{ gadosVivos }}</div>
         <div class="stat-label">Gados vivos</div>
       </div>
     </div>
@@ -34,7 +34,7 @@
     <div class="stat-card">
       <div class="stat-icon blue"><i class="bi bi-person-badge-fill"></i></div>
       <div>
-        <div class="stat-value" id="stat-veterinarios">—</div>
+        <div class="stat-value">{{ totalVeterinarios }}</div>
         <div class="stat-label">Veterinários</div>
       </div>
     </div>
@@ -43,7 +43,7 @@
     <div class="stat-card">
       <div class="stat-icon red"><i class="bi bi-scissors"></i></div>
       <div>
-        <div class="stat-value" id="stat-abatidos">—</div>
+        <div class="stat-value">{{ gadosAbatidos }}</div>
         <div class="stat-label">Gados abatidos</div>
       </div>
     </div>
@@ -56,9 +56,9 @@
     <div class="stat-card stat-card-prod">
       <div class="stat-icon teal"><i class="bi bi-droplet-fill"></i></div>
       <div class="flex-grow-1">
-        <div class="stat-value" id="stat-leite-semanal">—</div>
+        <div class="stat-value">{{ leiteSemanal|number_format(1, ',', '.') }} L</div>
         <div class="stat-label">Litros de leite / semana</div>
-        <div class="stat-sublabel" id="stat-leite-detalhe"></div>
+        <div class="stat-sublabel">Produção semanal total</div>
       </div>
     </div>
   </div>
@@ -66,30 +66,36 @@
     <div class="stat-card stat-card-prod">
       <div class="stat-icon orange"><i class="bi bi-box-seam-fill"></i></div>
       <div class="flex-grow-1">
-        <div class="stat-value" id="stat-racao-semanal">—</div>
+        <div class="stat-value">{{ racaoSemanal|number_format(1, ',', '.') }} kg</div>
         <div class="stat-label">Kg de ração / semana</div>
-        <div class="stat-sublabel" id="stat-racao-detalhe"></div>
+        <div class="stat-sublabel">Consumo semanal total</div>
       </div>
     </div>
   </div>
   <div class="col-12 col-md-4">
-    <div class="stat-card stat-card-prod stat-card-alert">
+    <div class="stat-card stat-card-prod stat-card-alert{{ animaisElegiveis > 0 ? ' has-alert' : '' }}">
       <div class="stat-icon purple"><i class="bi bi-exclamation-triangle-fill"></i></div>
       <div class="flex-grow-1">
-        <div class="stat-value" id="stat-jovens-alto-consumo">—</div>
+        <div class="stat-value">{{ animaisElegiveis }}</div>
         <div class="stat-label">Animais jovens (até 1 ano) que consomem mais de 500 kg de ração por semana</div>
-        <div class="stat-sublabel" id="stat-jovens-detalhe"></div>
+        <div class="stat-sublabel">
+          {% if animaisElegiveis > 0 %}
+            {{ animaisElegiveis }} animal(is) requer(em) atenção
+          {% else %}
+            Nenhum animal nesta categoria
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
 </div>
 
 {# ── TABELAS RECENTES ── #}
-<div class="row g-3">
+<div class="row g-3 dashboard-panels">
 
   {# Últimos gados #}
-  <div class="col-lg-7">
-    <div class="card">
+  <div class="col-12 col-xl-6">
+    <div class="card dashboard-panel-card h-100">
       <div class="card-header">
         <span><i class="fa-solid fa-cow"></i>  Gados Recentes</span>
         <a href="{{ path('gados_index') }}" class="btn btn-sm btn-outline-primary">Ver todos</a>
@@ -105,49 +111,92 @@
               <th>Status</th>
             </tr>
           </thead>
-          <tbody id="dashboard-gados-tbody">
-            <tr><td colspan="5" class="text-center text-muted py-4">
-              <span class="spinner-border spinner-border-sm me-2"></span>Carregando...
-            </td></tr>
+          <tbody>
+            {% if gadosVivos == 0 %}
+              <tr><td colspan="5" class="text-center text-muted py-4">
+                <i class="bi bi-inbox fs-3 d-block mb-2"></i>Nenhum gado vivo cadastrado.
+              </td></tr>
+            {% elseif ultimosGados is empty %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Nenhum gado recente.</td></tr>
+            {% else %}
+              {% for g in ultimosGados %}
+                <tr>
+                  <td class="fw-semibold">{{ g.codigo ?? '—' }}</td>
+                  <td>{{ g.peso|number_format(1, ',', '.') }} kg</td>
+                  <td>{{ g.leite|number_format(1, ',', '.') }} L/sem</td>
+                  <td>{{ g.nascimento ? g.nascimento|date('d/m/Y') : '—' }}</td>
+                  <td>
+                    <span class="badge-status {{ g.abatido ? 'badge-abatido' : 'badge-ativo' }}">
+                      {{ g.abatido ? 'Abatido' : 'Ativo' }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% endif %}
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  {# Fazendas + Veterinários síntese #}
-  <div class="col-lg-5">
-
-    {# Fazendas card #}
-    <div class="card mb-3">
+  {# Fazendas card #}
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="card dashboard-panel-card dashboard-summary-card h-100">
       <div class="card-header">
         <span><i class="bi bi-house-door-fill me-2 text-success"></i>Fazendas</span>
         <a href="{{ path('fazenda_index') }}" class="btn btn-sm btn-outline-primary">Gerenciar</a>
       </div>
-      <div class="list-group list-group-flush" id="dashboard-fazendas-list">
-        <div class="list-group-item text-center text-muted py-3 text-sm">
-          <span class="spinner-border spinner-border-sm me-2"></span>Carregando...
-        </div>
+      <div class="list-group list-group-flush dashboard-compact-list">
+        {% if ultimasFazendas is empty %}
+          <div class="list-group-item text-center text-muted py-3 text-sm">Nenhuma fazenda cadastrada.</div>
+        {% else %}
+          {% for f in ultimasFazendas|slice(0, 5) %}
+            <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3 dashboard-list-item">
+              <div class="stat-icon stat-icon-small green"><i class="bi bi-house-door"></i></div>
+              <div class="flex-grow-1">
+                <div class="fw-semibold text-base dashboard-list-title">{{ f.nome }}</div>
+                <div class="text-muted text-xs dashboard-list-meta">{{ f.responsavel }} | {{ f.tamanhoHA|number_format(1, ',', '.') }} ha</div>
+              </div>
+            </div>
+          {% endfor %}
+          {% if ultimasFazendas|length > 5 %}
+            <div class="list-group-item text-center small text-muted">
+              +{{ ultimasFazendas|length - 5 }} fazenda(s) recente(s)
+            </div>
+          {% endif %}
+        {% endif %}
       </div>
     </div>
+  </div>
 
-    {# Veterinários card #}
-    <div class="card">
+  {# Veterinários card #}
+  <div class="col-12 col-md-6 col-xl-3">
+    <div class="card dashboard-panel-card dashboard-summary-card h-100">
       <div class="card-header">
         <span><i class="bi bi-person-badge-fill me-2 text-primary"></i>Veterinários</span>
         <a href="{{ path('veterinarios_index') }}" class="btn btn-sm btn-outline-primary">Gerenciar</a>
       </div>
-      <div class="list-group list-group-flush" id="dashboard-vets-list">
-        <div class="list-group-item text-center text-muted py-3 text-sm">
-          <span class="spinner-border spinner-border-sm me-2"></span>Carregando...
-        </div>
+      <div class="list-group list-group-flush dashboard-compact-list">
+        {% if ultimosVeterinarios is empty %}
+          <div class="list-group-item text-center text-muted py-3 text-sm">Nenhum veterinário cadastrado.</div>
+        {% else %}
+          {% for v in ultimosVeterinarios|slice(0, 5) %}
+            <div class="list-group-item d-flex align-items-center gap-3 py-2 px-3 dashboard-list-item">
+              <div class="stat-icon stat-icon-small blue"><i class="bi bi-person-badge"></i></div>
+              <div>
+                <div class="fw-semibold text-base dashboard-list-title">{{ v.nome }}</div>
+                <div class="text-muted text-xs dashboard-list-meta">CRMV: {{ v.crmv }}</div>
+              </div>
+            </div>
+          {% endfor %}
+          {% if ultimosVeterinarios|length > 5 %}
+            <div class="list-group-item text-center small text-muted">
+              +{{ ultimosVeterinarios|length - 5 }} veterinário(s) recente(s)
+            </div>
+          {% endif %}
+        {% endif %}
       </div>
     </div>
-
   </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-  <script src="{{ asset('js/fazenda/dashboard.js') }}"></script>
 {% endblock %}

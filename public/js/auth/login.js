@@ -59,15 +59,11 @@ document.addEventListener('DOMContentLoaded', function () {
     showFeedback('Autenticando...', 'info');
 
     try {
-      const data = await AgroApp.fetchJson('/api/login_check', {
+      await AgroApp.fetchJson('/api/login_check', {
         method: 'POST',
         body: { email, password },
         skipAuthRedirect: true,
       });
-
-      const userName = resolveUserName(data, email);
-      localStorage.removeItem('jwtToken');
-      localStorage.setItem('userName', userName);
 
       showFeedback('Login realizado com sucesso. Redirecionando...', 'success');
       setTimeout(function () {
@@ -81,23 +77,6 @@ document.addEventListener('DOMContentLoaded', function () {
       setLoading(false);
     }
   });
-
-  function resolveUserName(data, fallbackEmail) {
-    if (data?.token) {
-      const payload = parseJwtPayload(data.token);
-      return payload?.username || payload?.email || fallbackEmail;
-    }
-
-    if (typeof data?.username === 'string' && data.username.trim()) {
-      return data.username.trim();
-    }
-
-    if (typeof data?.user === 'object') {
-      return data.user?.nome || data.user?.name || data.user?.email || fallbackEmail;
-    }
-
-    return fallbackEmail;
-  }
 
   function normalizeLoginErrorMessage(message) {
     const normalized = String(message || '').trim();
@@ -138,15 +117,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     return normalized;
-  }
-
-  function parseJwtPayload(token) {
-    try {
-      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-      return JSON.parse(atob(base64));
-    } catch {
-      return null;
-    }
   }
 
   function validateForm() {

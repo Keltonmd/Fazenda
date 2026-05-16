@@ -1,19 +1,9 @@
 window.AgroApp = (() => {
   const FLASH_STORAGE_KEY = 'agroPendingFlashes';
 
-  // ── Token JWT ──
-  const getToken = () => localStorage.getItem('jwtToken') ?? null;
-
   const clearSession = () => {
-    localStorage.removeItem('jwtToken');
-    localStorage.removeItem('userName');
+    sessionStorage.removeItem(FLASH_STORAGE_KEY);
   };
-
- 
-  // Lê o nome do usuário logado.
-  const getCurrentUserName = () => localStorage.getItem('userName') ?? 'Usuário';
-
-
 
   const escapeHtml = (value) => {
     return String(value ?? '')
@@ -41,8 +31,6 @@ window.AgroApp = (() => {
   };
 
   const fetchJson = async (url, options = {}) => {
-    const token = getToken();
-
     const config = {
       credentials: 'same-origin',
       headers: {
@@ -50,11 +38,6 @@ window.AgroApp = (() => {
       },
       ...options,
     };
-
-    // Adiciona Authorization se houver token 
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
 
     if (options.body && !(options.body instanceof FormData)) {
       config.body = JSON.stringify(options.body);
@@ -312,8 +295,6 @@ window.AgroApp = (() => {
   return {
     escapeHtml,
     fetchJson,
-    getCurrentUserName,
-    getToken,
     normalizeMessages,
     persistFlash,
     setFeedback,

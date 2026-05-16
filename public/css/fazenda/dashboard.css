@@ -80,17 +80,75 @@
   padding: .2em .5em;
 }
 
+.dashboard-panel-card .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .8rem 1rem;
+}
+
+.dashboard-summary-card {
+  min-height: 100%;
+}
+
+.dashboard-summary-card .dashboard-compact-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+}
+
+.dashboard-compact-list .list-group-item {
+  padding-top: .65rem;
+  padding-bottom: .65rem;
+}
+
+.dashboard-list-item {
+  min-height: 60px;
+}
+
+.dashboard-list-title {
+  font-size: .88rem;
+  line-height: 1.2;
+}
+
+.dashboard-list-meta {
+  font-size: .72rem;
+  line-height: 1.25;
+}
+
+.stat-icon-small {
+  width: 28px;
+  height: 28px;
+  font-size: .76rem;
+  border-radius: 7px;
+}
+
 /* ═══════════════════════════ RESPONSIVO ═══════════════════════════ */
+@media (min-width: 1200px) {
+  .dashboard-panels {
+    align-items: stretch;
+  }
+}
+
 @media (max-width: 768px) {
   .stat-card { padding: .75rem; }
   .stat-icon { width: 30px; height: 30px; font-size: .85rem; border-radius: 7px; }
   .stat-value { font-size: 1.1rem; }
   .stat-label { font-size: .7rem; }
+  .dashboard-panel-card .card-header {
+    padding: .75rem .9rem;
+  }
 }
 
 @media (max-width: 576px) {
   .stat-card {
     padding: .875rem;
     gap: .75rem;
+  }
+
+  .dashboard-panel-card .card-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
