@@ -170,7 +170,7 @@
       <tbody id="abates-tbody">
         {% for gado in listaAtiva %}
           {% set fazendaNome = fazendasPorId[gado.fazendaId] ?? null %}
-          {% set arrobas = (gado.peso * 0.5) / 15 %}
+          {% set arrobas = gado.peso  / 15 %}
           {% if abaAtiva == 'para_abate' %}
             <tr class="abate-row-highlight" data-id="{{ gado.id }}">
               <td><input type="checkbox" class="form-check-input gado-check" value="{{ gado.id }}"></td>
