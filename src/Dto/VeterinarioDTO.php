@@ -7,6 +7,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class VeterinarioDTO {
     private ?int $id = null;
+    private array $fazendasIds = [];
 
     #[Assert\NotBlank(message: 'Nome é obrigatório')]
     #[Assert\Length(
@@ -46,6 +47,7 @@ class VeterinarioDTO {
                     'id' => $fazenda->getId(),
                     'nome' => $fazenda->getNome(),
                 ];
+                $this->fazendasIds[] = $fazenda->getId();
             }
         }
     }
@@ -67,6 +69,11 @@ class VeterinarioDTO {
     public function getFazendas(): array {
         return $this->fazendas;
     }
+
+    public function getFazendasIds(): array
+    {
+        return $this->fazendasIds;
+    }
     
 
     // Setters
@@ -85,6 +92,11 @@ class VeterinarioDTO {
 
     public function setFazendas(array $fazendas): void {
         $this->fazendas = $fazendas;
+    }
+
+    public function setFazendasIds(array $fazendasIds): void
+    {
+        $this->fazendasIds = $fazendasIds;
     }
 
 }

@@ -7,6 +7,8 @@ use App\Entity\Fazenda;
 
 class FazendaDTO {
     private ?int $id = null;
+    private array $veterinarios = [];
+    private array $veterinariosIds = [];
 
     #[Assert\NotBlank(message: 'Nome é obrigatório')]
     #[Assert\Length(
@@ -40,6 +42,14 @@ class FazendaDTO {
             $this->nome = $fazenda->getNome();
             $this->responsavel = $fazenda->getResponsavel();
             $this->tamanhoHA = $fazenda->getTamanhoHA();
+
+            foreach ($fazenda->getVeterinarios() as $veterinario) {
+                $this->veterinarios[] = [
+                    'id' => $veterinario->getId(),
+                    'nome' => $veterinario->getNome(),
+                ];
+                $this->veterinariosIds[] = $veterinario->getId();
+            }
         }
     }
 
@@ -62,6 +72,15 @@ class FazendaDTO {
         return $this->tamanhoHA;
     }
 
+    public function getVeterinarios(): array {
+        return $this->veterinarios;
+    }
+
+    public function getVeterinariosIds(): array
+    {
+        return $this->veterinariosIds;
+    }
+
     // Setters
 
     public function setId(?int $id): void {
@@ -78,6 +97,15 @@ class FazendaDTO {
 
     public function setTamanhoHA(?float $tamanhoHA): void {
         $this->tamanhoHA = $tamanhoHA;
+    }
+
+    public function setVeterinarios(array $veterinarios): void {
+        $this->veterinarios = $veterinarios;
+    }
+
+    public function setVeterinariosIds(array $veterinariosIds): void
+    {
+        $this->veterinariosIds = $veterinariosIds;
     }
     
 }
