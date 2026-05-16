@@ -1,222 +1,77 @@
 // veterinarios.js
 
-document.addEventListener('DOMContentLoaded', async function () {
-
-  let paginaAtual = 1;
-  const limite = 10;
-  let totalPaginas = 1;
-
-  const tbody       = document.getElementById('vets-tbody');
-  const badgeCount  = document.getElementById('badge-vets-count');
-
-  const btnPrev = document.getElementById('btn-prev');
-  const btnNext = document.getElementById('btn-next');
-  const paginationInfo = document.getElementById('pagination-info');
-
-  const filtroQ     = document.getElementById('filtro-vet-q');
-  const btnLimpar   = document.getElementById('btn-limpar-filtro-vet');
+document.addEventListener('DOMContentLoaded', function () {
+  const formEl = document.getElementById('formVeterinario');
   const vetFeedback = document.getElementById('vet-form-feedback');
-  const deleteVetNome      = document.getElementById('delete-vet-nome');
+  const deleteFeedback = document.getElementById('delete-vet-feedback');
+  const deleteVetNome = document.getElementById('delete-vet-nome');
   const btnConfirmarDelete = document.getElementById('btn-confirmar-delete-vet');
+  const fazendasSummary = document.getElementById('vetFazendasSummary');
+  const fazendasTrigger = document.getElementById('vetFazendasTrigger');
+  const fazendasFiltroInput = document.getElementById('vet-fazendas-filtro');
 
-  const modalVetEl      = document.getElementById('modalVeterinario');
-  const modalDeleteEl   = document.getElementById('modalDeleteVet');
+  const modalVetEl = document.getElementById('modalVeterinario');
+  const modalDeleteEl = document.getElementById('modalDeleteVet');
   const modalFazendasEl = document.getElementById('modalVetFazendas');
-  const bsModalVet      = modalVetEl      ? new bootstrap.Modal(modalVetEl)      : null;
-  const bsModalDelete   = modalDeleteEl   ? new bootstrap.Modal(modalDeleteEl)   : null;
+  const bsModalVet = modalVetEl ? new bootstrap.Modal(modalVetEl) : null;
+  const bsModalDelete = modalDeleteEl ? new bootstrap.Modal(modalDeleteEl) : null;
   const bsModalFazendas = modalFazendasEl ? new bootstrap.Modal(modalFazendasEl) : null;
 
-  let todosVets = [];
-  let todasFazendas = [];
   let vetParaDeleteId = null;
+  let vetParaDeleteNomeAtual = '';
   let vetFazendasAtual = null;
-  let termoBusca = '';
-  let debounceTimer = null;
 
-  function setVetFeedback(message, type = 'danger') {
-    if (!vetFeedback) return;
-    vetFeedback.innerHTML = `<div class="alert alert-${type} py-2">${AgroApp.escapeHtml(message)}</div>`;
+  // Fazendas disponíveis carregadas do JSON emitido pelo Twig (sem fetch)
+  const todasFazendasJson = document.getElementById('todas-fazendas-json');
+  let todasFazendas = [];
+  try {
+    todasFazendas = todasFazendasJson ? JSON.parse(todasFazendasJson.textContent) : [];
+  } catch (_) {
+    todasFazendas = [];
   }
 
-  function setFazendasFeedback(message, type = 'danger') {
-    const feedbackEl = document.getElementById('vet-fazendas-feedback');
-    if (!feedbackEl) return;
-    feedbackEl.innerHTML = `<div class="alert alert-${type} py-2">${AgroApp.escapeHtml(message)}</div>`;
+  function getField(name) {
+    return formEl?.querySelector(`[name$="[${name}]"]`) ?? null;
   }
 
-  async function carregarFazendas() {
-    try {
-      const resFaz = await AgroApp.fetchJson('/api/fazendas/opcoes');
-      todasFazendas = resFaz?.data ?? [];
-    } catch (_) {
-      todasFazendas = [];
-    }
-
-    const selectFazenda = document.getElementById('vetFazenda');
-    if (selectFazenda) {
-      selectFazenda.innerHTML = '<option value="">Sem fazenda inicial</option>' +
-        todasFazendas.map(f =>
-          `<option value="${AgroApp.escapeHtml(String(f.id))}">${AgroApp.escapeHtml(f.nome)}</option>`
-        ).join('');
-    }
+  function getFazendaInputs() {
+    return Array.from(formEl?.querySelectorAll('.js-veterinario-fazenda-option') ?? []);
   }
 
-  async function carregarVets() {
-    try {
-      const res = await AgroApp.fetchJson(
-        `/api/veterinarios?page=${paginaAtual}&limit=${limite}&search=${encodeURIComponent(termoBusca)}`
-      );
+  bindRowActions();
+  bindFazendasPicker();
+  updateFazendasPickerSummary();
 
-      const lista = res?.data ?? [];
-      const total = res?.pagination?.totalItems ?? 0;
-
-      totalPaginas = Math.max(1, res?.pagination?.totalPages ?? 1);
-
-      todosVets = lista;
-
-      renderizar(lista);
-      renderizarPaginacao();
-
-      if (badgeCount) badgeCount.textContent = total;
-    } catch (err) {
-      todosVets = [];
-      if (tbody) {
-        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-5">
-          <i class="bi bi-exclamation-circle fs-2 d-block mb-2"></i>${AgroApp.escapeHtml(err.message)}
-        </td></tr>`;
-      }
-    }
-  }
-
-  function renderizar(lista) {
-    if (!tbody) return;
-
-    if (lista.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-5">
-        <i class="bi bi-inbox fs-2 d-block mb-2"></i>Nenhum veterinário encontrado.
-      </td></tr>`;
-      return;
-    }
-
-    const e = AgroApp.escapeHtml;
-    tbody.innerHTML = lista.map(v => {
-      const fazendasDoVet = v.fazendas ?? [];
-      const resumoFazendas = fazendasDoVet.length > 0
-        ? fazendasDoVet.map(f =>
-            `<span class="badge bg-success-subtle text-success border border-success-subtle me-1 badge-fazenda">${e(f.nome)}</span>`
-          ).join('')
-        : '<span class="text-muted small">Nenhuma fazenda vinculada</span>';
-
-      return `
-        <tr>
-          <td data-label="Nome" class="fw-semibold">${e(v.nome)}</td>
-          <td data-label="CRMV" class="crmv-text">${e(v.crmv)}</td>
-          <td data-label="Fazendas">
-            <div class="td-fazendas-content">
-              ${resumoFazendas}
-              <button class="btn btn-xs btn-outline-success btn-ger-fazendas-vet"
-                      data-id="${e(v.id)}"
-                      data-nome="${e(v.nome)}"
-                      title="Adicionar ou remover fazendas">
-                <i class="bi bi-house-gear me-1"></i>Gerenciar
-              </button>
-            </div>
-          </td>
-          <td class="text-end td-actions">
-            <div class="action-group">
-              <button class="btn-action btn-action-edit btn-editar-vet" title="Editar"
-                      data-id="${e(v.id)}"
-                      data-nome="${e(v.nome)}"
-                      data-crmv="${e(v.crmv)}">
-                <i class="bi bi-pencil"></i>
-              </button>
-              <button class="btn-action btn-action-delete btn-delete-vet" title="Excluir"
-                      data-id="${e(v.id)}"
-                      data-nome="${e(v.nome)}">
-                <i class="bi bi-trash3"></i>
-              </button>
-            </div>
-          </td>
-        </tr>`;
-    }).join('');
-
-    tbody.querySelectorAll('.btn-editar-vet').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalEdicao(btn.dataset));
-    });
-
-    tbody.querySelectorAll('.btn-delete-vet').forEach(btn => {
-      btn.addEventListener('click', () => {
-        vetParaDeleteId = btn.dataset.id;
-        if (deleteVetNome) deleteVetNome.textContent = btn.dataset.nome;
-        bsModalDelete?.show();
-      });
-    });
-
-    tbody.querySelectorAll('.btn-ger-fazendas-vet').forEach(btn => {
-      btn.addEventListener('click', () => abrirModalFazendas(btn.dataset));
-    });
-  }
-
-  function renderizarPaginacao() {
-    if (paginationInfo) {
-      paginationInfo.textContent = `Página ${paginaAtual} de ${totalPaginas}`;
-    }
-
-    if (btnPrev) btnPrev.disabled = paginaAtual <= 1;
-    if (btnNext) btnNext.disabled = paginaAtual >= totalPaginas;
-  }
-
-  btnPrev?.addEventListener('click', () => {
-    if (paginaAtual > 1) {
-      paginaAtual--;
-      carregarVets();
-    }
-  });
-
-  btnNext?.addEventListener('click', () => {
-    if (paginaAtual < totalPaginas) {
-      paginaAtual++;
-      carregarVets();
-    }
-  });
-
-  function abrirModalEdicao(data) {
-    document.getElementById('modalVetTitle').innerHTML =
-      '<i class="bi bi-person-badge-fill text-primary me-2"></i>Editar Veterinário';
-    document.getElementById('vetId').value = data.id;
-    document.getElementById('vetNome').value = data.nome;
-    document.getElementById('vetCrmv').value = data.crmv;
-    document.getElementById('vetBtnLabel').textContent = 'Salvar alterações';
-
-    const wrap = document.getElementById('vetFazendaWrap');
-    if (wrap) wrap.style.display = 'none';
-    if (vetFeedback) vetFeedback.innerHTML = '';
-
-    bsModalVet?.show();
-  }
-
-  document.getElementById('btn-novo-vet')?.addEventListener('click', () => {
+  document.getElementById('btn-novo-vet')?.addEventListener('click', function () {
     document.getElementById('modalVetTitle').innerHTML =
       '<i class="bi bi-person-badge-fill text-primary me-2"></i>Novo Veterinário';
     document.getElementById('vetId').value = '';
-    document.getElementById('vetNome').value = '';
-    document.getElementById('vetCrmv').value = '';
+    const nomeField = getField('nome');
+    const crmvField = getField('crmv');
+    if (nomeField) nomeField.value = '';
+    if (crmvField) crmvField.value = '';
     document.getElementById('vetBtnLabel').textContent = 'Cadastrar';
+    getFazendaInputs().forEach(input => {
+      input.checked = false;
+    });
+    updateFazendasPickerSummary();
 
-    const wrap = document.getElementById('vetFazendaWrap');
-    if (wrap) wrap.style.display = '';
-    const select = document.getElementById('vetFazenda');
-    if (select) select.value = '';
-    if (vetFeedback) vetFeedback.innerHTML = '';
+    AgroApp.setFeedback(vetFeedback, []);
   });
 
-  document.getElementById('formVeterinario')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
+  document.getElementById('formVeterinario')?.addEventListener('submit', async function (event) {
+    event.preventDefault();
 
+    const nomeField = getField('nome');
+    const crmvField = getField('crmv');
     const id = document.getElementById('vetId').value;
-    const nome = document.getElementById('vetNome').value.trim();
-    const crmv = document.getElementById('vetCrmv').value.trim();
-    const isEdit = !!id;
+    const nome = nomeField?.value.trim() ?? '';
+    const crmv = crmvField?.value.trim() ?? '';
+    const fazendasIds = getFazendaInputs()
+      .filter(input => input.checked)
+      .map(input => Number(input.value))
+      .filter(Number.isInteger);
+    const isEdit = Boolean(id);
 
     if (!nome || !crmv) {
       setVetFeedback('Preencha todos os campos obrigatórios.');
@@ -229,104 +84,63 @@ document.addEventListener('DOMContentLoaded', async function () {
       return;
     }
 
-    try {
-      if (isEdit) {
-        await AgroApp.fetchJson(`/api/veterinarios/${id}`, { method: 'PUT', body: { nome, crmv } });
-        AgroApp.toast('Veterinário atualizado com sucesso.', 'success');
-      } else {
-        const idFazendaVal = document.getElementById('vetFazenda')?.value ?? '';
-        const idFazenda = idFazendaVal ? Number(idFazendaVal) : null;
+    const submitBtn = this.querySelector('button[type="submit"]');
 
-        await AgroApp.fetchJson('/api/veterinarios', {
-          method: 'POST',
-          body: { nome, crmv, idFazenda },
-        });
-        AgroApp.toast('Veterinário cadastrado com sucesso.', 'success');
+    try {
+      if (submitBtn) {
+        submitBtn.disabled = true;
       }
 
+      if (isEdit) {
+        await AgroApp.fetchJson(`/api/veterinarios/${id}`, {
+          method: 'PUT',
+          body: { nome, crmv, fazendasIds },
+        });
+      } else {
+        await AgroApp.fetchJson('/api/veterinarios', {
+          method: 'POST',
+          body: { nome, crmv, fazendasIds },
+        });
+      }
+
+      AgroApp.persistFlash(
+        'success',
+        isEdit ? 'Veterinário atualizado com sucesso.' : 'Veterinário criado com sucesso.'
+      );
       bsModalVet?.hide();
-      await carregarVets();
+      window.location.reload();
     } catch (err) {
-      setVetFeedback(err.message);
-      AgroApp.toast(err.message, 'error');
+      setVetFeedback(err);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+      }
     }
   });
 
   btnConfirmarDelete?.addEventListener('click', async function () {
-    if (!vetParaDeleteId) return;
-
-    try {
-      await AgroApp.fetchJson(`/api/veterinarios/${vetParaDeleteId}`, { method: 'DELETE' });
-      bsModalDelete?.hide();
-      vetParaDeleteId = null;
-      await carregarVets();
-      AgroApp.toast('Veterinário excluído com sucesso.', 'success');
-    } catch (err) {
-      AgroApp.toast('Erro ao excluir: ' + err.message, 'error');
-    }
-  });
-
-  async function abrirModalFazendas(data) {
-    vetFazendasAtual = { id: data.id, nome: data.nome };
-    document.getElementById('vet-fazendas-nome').textContent = data.nome;
-
-    setFazendasFeedback('', 'success');
-    const feedbackEl = document.getElementById('vet-fazendas-feedback');
-    if (feedbackEl) feedbackEl.innerHTML = '';
-
-    renderizarFazendasDoVet();
-    popularSelectAdicionar();
-    bsModalFazendas?.show();
-  }
-
-  function renderizarFazendasDoVet() {
-    const listEl = document.getElementById('vet-fazendas-vinculadas-list');
-    if (!listEl || !vetFazendasAtual) return;
-
-    const vet = todosVets.find(v => String(v.id) === String(vetFazendasAtual.id));
-    const fazendas = vet?.fazendas ?? [];
-
-    if (fazendas.length === 0) {
-      listEl.innerHTML = '<p class="text-muted small mb-0">Nenhuma fazenda vinculada.</p>';
+    if (!vetParaDeleteId) {
       return;
     }
 
-    listEl.innerHTML = fazendas.map(f => `
-      <div class="d-flex align-items-center justify-content-between mb-2 p-2 border rounded">
-        <span><i class="bi bi-house-door text-success me-2"></i>${AgroApp.escapeHtml(f.nome)}</span>
-        <button class="btn btn-sm btn-outline-danger btn-remove-fazenda-vet"
-                data-fazenda-id="${AgroApp.escapeHtml(String(f.id))}"
-                data-fazenda-nome="${AgroApp.escapeHtml(f.nome)}">
-          <i class="bi bi-x-lg"></i> Remover
-        </button>
-      </div>
-    `).join('');
-
-    listEl.querySelectorAll('.btn-remove-fazenda-vet').forEach(btn => {
-      btn.addEventListener('click', () => removerFazendaDoVet(btn.dataset.fazendaId, btn.dataset.fazendaNome));
-    });
-  }
-
-  function popularSelectAdicionar() {
-    const sel = document.getElementById('vetFazendaParaAdicionar');
-    if (!sel || !vetFazendasAtual) return;
-
-    const vet = todosVets.find(v => String(v.id) === String(vetFazendasAtual.id));
-    const vinculadasIds = new Set((vet?.fazendas ?? []).map(f => String(f.id)));
-
-    const disponiveis = todasFazendas.filter(f => !vinculadasIds.has(String(f.id)));
-
-    sel.innerHTML = '<option value="">Selecione a fazenda...</option>' +
-      disponiveis.map(f =>
-        `<option value="${AgroApp.escapeHtml(String(f.id))}">${AgroApp.escapeHtml(f.nome)}</option>`
-      ).join('');
-
-    sel.disabled = disponiveis.length === 0;
-  }
+    try {
+      btnConfirmarDelete.disabled = true;
+      await AgroApp.fetchJson(`/api/veterinarios/${vetParaDeleteId}`, { method: 'DELETE' });
+      AgroApp.persistFlash('success', `Veterinário "${vetParaDeleteNomeAtual}" excluído com sucesso.`);
+      bsModalDelete?.hide();
+      vetParaDeleteId = null;
+      vetParaDeleteNomeAtual = '';
+      window.location.reload();
+    } catch (err) {
+      AgroApp.setFeedback(deleteFeedback, err);
+    } finally {
+      btnConfirmarDelete.disabled = false;
+    }
+  });
 
   document.getElementById('btn-add-fazenda-vet')?.addEventListener('click', async function () {
-    const sel = document.getElementById('vetFazendaParaAdicionar');
-    const fazendaId = sel?.value ?? '';
+    const select = document.getElementById('vetFazendaParaAdicionar');
+    const fazendaId = select?.value ?? '';
     const fazendaObj = todasFazendas.find(f => String(f.id) === String(fazendaId));
 
     if (!vetFazendasAtual || !fazendaId || !fazendaObj) {
@@ -339,62 +153,341 @@ document.addEventListener('DOMContentLoaded', async function () {
         method: 'POST',
       });
 
-      await carregarVets();
-      abrirModalFazendas(vetFazendasAtual);
-      popularSelectAdicionar();
-
-      AgroApp.toast('Fazenda vinculada com sucesso.', 'success');
-      setFazendasFeedback('Fazenda vinculada com sucesso.', 'success');
-
+      AgroApp.persistFlash('success', 'Fazenda vinculada ao veterinário com sucesso.');
+      window.location.reload();
     } catch (err) {
-      setFazendasFeedback(err.message);
-      AgroApp.toast('Erro ao vincular fazenda: ' + err.message, 'error');
+      setFazendasFeedback(err);
     }
   });
 
+  function bindRowActions() {
+    document.querySelectorAll('.btn-editar-vet').forEach(btn => {
+      btn.addEventListener('click', function () {
+        abrirModalEdicao(btn.dataset);
+      });
+    });
+
+    document.querySelectorAll('.btn-delete-vet').forEach(btn => {
+      btn.addEventListener('click', function () {
+        vetParaDeleteId = btn.dataset.id;
+        vetParaDeleteNomeAtual = btn.dataset.nome ?? '';
+
+        if (deleteVetNome) {
+          deleteVetNome.textContent = btn.dataset.nome;
+        }
+
+        AgroApp.setFeedback(deleteFeedback, []);
+        bsModalDelete?.show();
+      });
+    });
+
+    document.querySelectorAll('.btn-ger-fazendas-vet').forEach(btn => {
+      btn.addEventListener('click', function () {
+        abrirModalFazendas(btn.dataset, 'gerenciar');
+      });
+    });
+
+    document.querySelectorAll('.btn-consultar-fazendas-vet').forEach(btn => {
+      btn.addEventListener('click', function () {
+        abrirModalFazendas(btn.dataset, 'consultar');
+      });
+    });
+  }
+
+  function abrirModalEdicao(data) {
+    document.getElementById('modalVetTitle').innerHTML =
+      '<i class="bi bi-person-badge-fill text-primary me-2"></i>Editar Veterinário';
+    document.getElementById('vetId').value = data.id ?? '';
+    const nomeField = getField('nome');
+    const crmvField = getField('crmv');
+    if (nomeField) nomeField.value = data.nome ?? '';
+    if (crmvField) crmvField.value = data.crmv ?? '';
+    document.getElementById('vetBtnLabel').textContent = 'Salvar alterações';
+    const fazendasIds = new Set(splitIds(data.fazendasIds));
+    getFazendaInputs().forEach(input => {
+      input.checked = fazendasIds.has(input.value);
+    });
+    updateFazendasPickerSummary();
+
+    AgroApp.setFeedback(vetFeedback, []);
+
+    bsModalVet?.show();
+  }
+
+  function abrirModalFazendas(data, modo = 'gerenciar') {
+    vetFazendasAtual = {
+      id: data.id,
+      nome: data.nome,
+      fazendas: parseFazendas(data.fazendas),
+      modo,
+    };
+
+    const nomeEl = document.getElementById('vet-fazendas-nome');
+    const titleEl = document.getElementById('modalVetFazendasTitle');
+    if (nomeEl) {
+      nomeEl.textContent = data.nome ?? '';
+    }
+    if (titleEl) {
+      titleEl.innerHTML = modo === 'consultar'
+        ? '<i class="bi bi-eye text-secondary" aria-hidden="true"></i>Fazendas do Veterinário'
+        : '<i class="bi bi-house-door-fill text-success" aria-hidden="true"></i>Fazendas do Veterinário';
+    }
+
+    renderizarFazendasDoVet();
+    popularSelectAdicionar();
+    limparFazendasFeedback();
+    if (fazendasFiltroInput) {
+      fazendasFiltroInput.value = '';
+    }
+    alternarModoModalFazendas();
+    bsModalFazendas?.show();
+  }
+
+  function renderizarFazendasDoVet() {
+    const listEl = document.getElementById('vet-fazendas-vinculadas-list');
+    const resumoEl = document.getElementById('vet-fazendas-resumo');
+
+    if (!listEl || !vetFazendasAtual) {
+      return;
+    }
+
+    if (vetFazendasAtual.fazendas.length === 0) {
+      listEl.innerHTML = '<p class="text-muted small mb-0">Nenhuma fazenda vinculada.</p>';
+      if (resumoEl) {
+        resumoEl.textContent = 'Nenhuma fazenda vinculada.';
+      }
+      return;
+    }
+
+    if (resumoEl) {
+      resumoEl.textContent = vetFazendasAtual.fazendas.length === 1
+        ? '1 fazenda vinculada.'
+        : `${vetFazendasAtual.fazendas.length} fazendas vinculadas.`;
+    }
+
+    listEl.innerHTML = vetFazendasAtual.fazendas.map(fazenda => `
+      <div class="vet-fazenda-card" data-search="${AgroApp.escapeHtml(fazenda.nome.toLowerCase())}">
+        <span class="vet-fazenda-card-name"><i class="bi bi-house-door text-success me-2"></i>${AgroApp.escapeHtml(fazenda.nome)}</span>
+        <button class="btn btn-sm btn-outline-danger btn-remove-fazenda-vet"
+                data-fazenda-id="${AgroApp.escapeHtml(String(fazenda.id))}"
+                data-fazenda-nome="${AgroApp.escapeHtml(fazenda.nome)}"
+                type="button">
+          <i class="bi bi-x-lg"></i> Remover
+        </button>
+      </div>
+    `).join('');
+
+    listEl.querySelectorAll('.btn-remove-fazenda-vet').forEach(btn => {
+      btn.addEventListener('click', function () {
+        removerFazendaDoVet(btn.dataset.fazendaId, btn.dataset.fazendaNome);
+      });
+    });
+
+    aplicarFiltroFazendasVinculadas();
+  }
+
+  function popularSelectAdicionar() {
+    const select = document.getElementById('vetFazendaParaAdicionar');
+    const addButton = document.getElementById('btn-add-fazenda-vet');
+
+    if (!select || !vetFazendasAtual) {
+      return;
+    }
+
+    const vinculadasIds = new Set(vetFazendasAtual.fazendas.map(fazenda => String(fazenda.id)));
+    const disponiveis = todasFazendas.filter(fazenda => !vinculadasIds.has(String(fazenda.id)));
+
+    select.innerHTML = '<option value="">Selecione a fazenda...</option>' +
+      disponiveis.map(fazenda =>
+        `<option value="${AgroApp.escapeHtml(String(fazenda.id))}">${AgroApp.escapeHtml(fazenda.nome)}</option>`
+      ).join('');
+
+    select.disabled = disponiveis.length === 0;
+    if (addButton) {
+      addButton.disabled = vetFazendasAtual.modo === 'consultar' || disponiveis.length === 0;
+    }
+  }
+
   async function removerFazendaDoVet(fazendaId, fazendaNome) {
-    if (!vetFazendasAtual) return;
+    if (!vetFazendasAtual) {
+      return;
+    }
 
     const ok = await AgroApp.confirm(
       `Remover a fazenda "${fazendaNome}" deste veterinário?`,
       'O vínculo será desfeito. Esta ação pode ser refeita depois.',
       'warning'
     );
-    if (!ok) return;
+
+    if (!ok) {
+      return;
+    }
 
     try {
       await AgroApp.fetchJson(`/api/veterinarios/${vetFazendasAtual.id}/fazendas/${fazendaId}`, {
         method: 'DELETE',
       });
-      AgroApp.toast('Fazenda removida do veterinário com sucesso.', 'success');
-      setFazendasFeedback('Fazenda removida com sucesso.', 'success');
-      await carregarVets();
-      abrirModalFazendas(vetFazendasAtual);
-      popularSelectAdicionar();
+
+      AgroApp.persistFlash('success', 'Fazenda removida do veterinário com sucesso.');
+      window.location.reload();
     } catch (err) {
-      setFazendasFeedback(err.message);
-      AgroApp.toast('Erro ao remover fazenda: ' + err.message, 'error');
+      setFazendasFeedback(err);
     }
   }
 
-  filtroQ?.addEventListener('input', async function () {
-    termoBusca = this.value.trim();
-    paginaAtual = 1;
+  function bindFazendasPicker() {
+    getFazendaInputs().forEach(input => {
+      input.addEventListener('change', updateFazendasPickerSummary);
+    });
 
-    clearTimeout(debounceTimer);
+    document.getElementById('vetFazendasClear')?.addEventListener('click', function () {
+      getFazendaInputs().forEach(input => {
+        input.checked = false;
+      });
 
-    debounceTimer = setTimeout(async () => {
-      await carregarVets();
-    }, 300);
-  });
+      updateFazendasPickerSummary();
+    });
+  }
 
-  btnLimpar?.addEventListener('click', async function () {
-    if (filtroQ) filtroQ.value = '';
-    termoBusca = '';
-    paginaAtual = 1;
-    await carregarVets();
-  });
+  function alternarModoModalFazendas() {
+    const addSectionButton = document.getElementById('btn-add-fazenda-vet');
+    const addSelect = document.getElementById('vetFazendaParaAdicionar');
+    const feedbackHelp = document.getElementById('vet-fazendas-feedback');
+    const modeNote = document.getElementById('vet-fazendas-mode-note');
+    const addSection = document.getElementById('vet-fazendas-add-section');
+    const isConsulta = vetFazendasAtual?.modo === 'consultar';
 
-  await carregarFazendas();
-  await carregarVets();
+    document.querySelectorAll('.btn-remove-fazenda-vet').forEach(button => {
+      button.disabled = isConsulta;
+      button.classList.toggle('disabled', isConsulta);
+    });
+
+    if (addSectionButton) {
+      addSectionButton.disabled = isConsulta || addSectionButton.disabled;
+    }
+
+    if (addSelect) {
+      addSelect.disabled = isConsulta || addSelect.disabled;
+    }
+
+    if (modeNote) {
+      modeNote.hidden = isConsulta;
+    }
+
+    if (addSection) {
+      addSection.hidden = isConsulta;
+    }
+
+    if (feedbackHelp) {
+      AgroApp.setFeedback(
+        feedbackHelp,
+        [],
+        'info'
+      );
+    }
+  }
+
+  function aplicarFiltroFazendasVinculadas() {
+    const listEl = document.getElementById('vet-fazendas-vinculadas-list');
+
+    if (!listEl) {
+      return;
+    }
+
+    const termo = (fazendasFiltroInput?.value ?? '').trim().toLowerCase();
+    const cards = Array.from(listEl.querySelectorAll('.vet-fazenda-card'));
+    let visiveis = 0;
+
+    cards.forEach(card => {
+      const corresponde = !termo || (card.dataset.search ?? '').includes(termo);
+      card.style.display = corresponde ? '' : 'none';
+
+      if (corresponde) {
+        visiveis += 1;
+      }
+    });
+
+    const emptyState = listEl.querySelector('.vet-fazendas-filter-empty');
+
+    if (emptyState) {
+      emptyState.remove();
+    }
+
+    if (cards.length > 0 && visiveis === 0) {
+      const message = document.createElement('p');
+      message.className = 'text-muted small mb-0 vet-fazendas-filter-empty';
+      message.textContent = 'Nenhuma fazenda encontrada para este filtro.';
+      listEl.appendChild(message);
+    }
+  }
+
+  function splitIds(value) {
+    return (value ?? '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+  }
+
+  function parseFazendas(value) {
+    if (!value) {
+      return [];
+    }
+
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function setVetFeedback(message, type = 'danger') {
+    AgroApp.setFeedback(vetFeedback, message, type);
+  }
+
+  function setFazendasFeedback(message, type = 'danger') {
+    const feedbackEl = document.getElementById('vet-fazendas-feedback');
+
+    AgroApp.setFeedback(feedbackEl, message, type);
+  }
+
+  function limparFazendasFeedback() {
+    const feedbackEl = document.getElementById('vet-fazendas-feedback');
+
+    AgroApp.setFeedback(feedbackEl, []);
+  }
+
+  function updateFazendasPickerSummary() {
+    const inputs = getFazendaInputs();
+    const selectedLabels = inputs
+      .filter(input => input.checked)
+      .map(input => input.closest('.relation-picker-option')?.dataset.label ?? '')
+      .filter(Boolean);
+
+    const summaryText = inputs.length === 0
+      ? 'Nenhuma fazenda disponível para vincular.'
+      : formatSelectionSummary(selectedLabels, 'Nenhuma fazenda selecionada.', 'fazendas');
+
+    if (fazendasSummary) {
+      fazendasSummary.textContent = summaryText;
+    }
+
+    if (fazendasTrigger) {
+      fazendasTrigger.textContent = summaryText;
+    }
+  }
+
+  function formatSelectionSummary(labels, emptyText, pluralLabel) {
+    if (labels.length === 0) {
+      return emptyText;
+    }
+
+    if (labels.length <= 2) {
+      return labels.join(', ');
+    }
+
+    return `${labels.length} ${pluralLabel} selecionadas`;
+  }
+
+  fazendasFiltroInput?.addEventListener('input', aplicarFiltroFazendasVinculadas);
 });
