@@ -45,6 +45,7 @@ security:
             pattern: ^/
             stateless: true
             provider: usuario_provider
+            entry_point: App\Security\WebAuthenticationEntryPoint
             jwt: ~
             logout:
                 path: app_logout

@@ -11,7 +11,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class VeterinariosRouterController extends AbstractController
 {
     private VeterinarioService $veterinarioService;
@@ -28,10 +30,6 @@ final class VeterinariosRouterController extends AbstractController
     {
         /** @var Usuario $usuario */
         $usuario = $this->getUser();
-
-        if (!$usuario) {
-            return $this->redirectToRoute('login');
-        }
 
         $pagination = $this->veterinarioService
             ->listarTodosVeterinariosPaginado($usuario->getId(), $request,$paginator);
