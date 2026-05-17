@@ -50,12 +50,9 @@ if [ -f composer.json ] && [ ! -f vendor/autoload.php ]; then
 fi
 
 if [ -f bin/console ]; then
-    if [ "${APP_AUTO_MIGRATE:-1}" = "1" ] && find migrations -maxdepth 1 -name '*.php' -print -quit | grep -q .; then
+    if [ "${APP_AUTO_MIGRATE:-1}" = "1" ]; then
         echo "Running migrations..."
         php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
-    elif [ "${APP_AUTO_SCHEMA_UPDATE:-1}" = "1" ]; then
-        echo "Updating database schema from Doctrine entities..."
-        php bin/console doctrine:schema:update --force
     fi
 fi
 
