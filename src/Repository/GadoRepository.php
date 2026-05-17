@@ -246,7 +246,7 @@ class GadoRepository extends ServiceEntityRepository
                     g.nascimento <= :dataLimite
                     OR g.leite < 40
                     OR (g.racao / 7 > 50 AND g.leite < 70)
-                    OR g.peso / 15 >= 18
+                    OR g.peso / 15 > 18
                 )
             ')
             ->setParameter('dataLimite', $dataLimite);
@@ -262,7 +262,7 @@ class GadoRepository extends ServiceEntityRepository
         }
 
         if ($condicao === 'ARROBA_MAIOR_18') {
-            $qb->andWhere('(g.peso / 15) >= 18');
+            $qb->andWhere('g.peso / 15 > 18');
         }
 
         if ($condicao === 'IDADE_MAIOR_5') {
@@ -329,7 +329,7 @@ class GadoRepository extends ServiceEntityRepository
                     g.nascimento <= :dataLimite
                     OR g.leite < 40
                     OR (g.racao / 7 > 50 AND g.leite < 70)
-                    OR g.peso / 15 >= 18
+                    OR g.peso / 15 > 18
                 )
             ')
             ->setParameter('dataLimite', $dataLimite);
@@ -345,7 +345,7 @@ class GadoRepository extends ServiceEntityRepository
         }
 
         if ($condicao === 'ARROBA_MAIOR_18') {
-            $qb->andWhere('(g.peso / 15) >= 18');
+            $qb->andWhere('g.peso / 15 > 18');
         }
 
         if ($condicao === 'IDADE_MAIOR_5') {
@@ -364,7 +364,7 @@ class GadoRepository extends ServiceEntityRepository
                     g.nascimento <= :dataLimite
                     OR g.leite < 40
                     OR (g.racao / 7 > 50 AND g.leite < 70)
-                    OR g.peso / 15 >= 18
+                    OR g.peso / 15 > 18
                 )
             ')
             ->setParameter('dataLimite', $dataLimite);

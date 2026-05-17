@@ -11,7 +11,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[IsGranted('IS_AUTHENTICATED_FULLY')]
 final class GadosRouterController extends AbstractController
 {
     private GadoService $gadoService;
@@ -26,10 +28,6 @@ final class GadosRouterController extends AbstractController
     #[Route('/fazendas/gados', name: 'gados_index')]
     public function gados(Request $request, PaginatorInterface $paginator): Response
     {
-        if (!$this->getUser()) {
-            return $this->redirectToRoute('login');
-        }
-
         /** @var Usuario $usuario */
         $usuario = $this->getUser();
 
@@ -59,10 +57,6 @@ final class GadosRouterController extends AbstractController
     #[Route('/fazendas/gados/abates', name: 'abates_index')]
     public function abates(Request $request, PaginatorInterface $paginator): Response
     {
-        if (!$this->getUser()) {
-            return $this->redirectToRoute('login');
-        }
-
         /** @var Usuario $usuario */
         $usuario = $this->getUser();
 

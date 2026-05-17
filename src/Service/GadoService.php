@@ -386,10 +386,9 @@ class GadoService
         return $intervalo->y;
     }
 
-    /** Obtenha o peso vivo: Pesagem do animal (em kg). Calcule a carcaça: Multiplique o peso vivo pelo rendimento (ex: 50% = 0,50). Divida por 15: O resultado em kg dividido por 15 dá o número de arrobas. */
-    private function calcularArroba(float $peso): float
+    private function calcularArrobas(float $peso): float
     {
-        return ($peso * 0.5) / 15;
+        return $peso / 15;
     }
 
     //quantidade ingerida por semana dividido por 7
@@ -402,7 +401,7 @@ class GadoService
     {
         $idade = $this->calcularIdadeAnos($gado->getNascimento());
         $litrosLeite = $gado->getLeite();
-        $arroba = $this->calcularArroba($gado->getPeso());
+        $arrobas = $this->calcularArrobas($gado->getPeso());
         $racaoIngerida = $this->calcularRacaoIngerida($gado->getRacao());
 
         if ($idade > 5) {
@@ -417,7 +416,7 @@ class GadoService
             return true;
         }
 
-        if ($arroba >= 18) {
+        if ($arrobas > 18) {
             return true;
         }
 
